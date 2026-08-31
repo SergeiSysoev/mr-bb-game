@@ -47,7 +47,7 @@
       </header>
 
       <section class="game-shell" aria-label="Mr. BB game">
-        <div id="game-stage" tabindex="-1">
+        <div id="game-stage" tabindex="-1" aria-describedby="gesture-instructions">
           <div class="hud" aria-label="Game status">
             <div class="hud-stat">
               <span class="hud-label">SCORE</span>
@@ -79,9 +79,21 @@
                 Grab all 10 duct sections. Mastic hits and missed decks cost one hard hat and 75 points.
               </p>
               <button id="overlay-action" type="button" disabled>LOADING…</button>
-              <p class="keyboard-hint">Move: A / D or arrows · Jump: W / ↑ / Space</p>
-              <p class="touch-hint">Hold ← or → to run · Tap JUMP with your other thumb</p>
+              <p class="keyboard-hint">Move: A / D or arrows · Jump: W / ↑ / Space · Crouch: S / ↓</p>
+              <p class="touch-hint">
+                <span>Swipe → run · ← back · ↑ jump · ↓ crouch</span>
+                <span>Double swipe ↑ high jump · → sprint</span>
+              </p>
             </div>
+          </div>
+
+          <div id="gesture-tracker" class="gesture-tracker" aria-hidden="true">
+            <span id="gesture-tracker-icon">•</span>
+          </div>
+
+          <div id="gesture-feedback" class="gesture-feedback" aria-hidden="true">
+            <span id="gesture-feedback-icon">→</span>
+            <strong id="gesture-feedback-label">RUN</strong>
           </div>
 
           <div class="touch-controls" aria-label="Touch controls" inert>
@@ -94,9 +106,19 @@
             </div>
             <div class="touch-pad touch-pad-action">
               <span class="touch-label" aria-hidden="true">ACTION</span>
-              <button class="touch-button touch-jump" type="button" data-control="jump" aria-label="Jump">
-                JUMP
-              </button>
+              <div class="touch-cluster touch-cluster-action">
+                <button
+                  class="touch-button touch-crouch"
+                  type="button"
+                  data-control="crouch"
+                  aria-label="Crouch"
+                >
+                  DUCK
+                </button>
+                <button class="touch-button touch-jump" type="button" data-control="jump" aria-label="Jump">
+                  JUMP
+                </button>
+              </div>
             </div>
           </div>
 
@@ -111,6 +133,11 @@
             ↻
           </button>
 
+          <p id="gesture-instructions" class="sr-only">
+            On touch screens, swipe right to run, left to go back, up to jump, or down to crouch and stop.
+            Swipe up twice for a high jump or right twice to sprint. The on-screen buttons and keyboard controls
+            remain available.
+          </p>
           <p id="game-announcement" class="sr-only" aria-live="polite"></p>
         </div>
 

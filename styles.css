@@ -99,6 +99,9 @@ h1 span {
   overflow: hidden;
   background: #101b23;
   isolation: isolate;
+  touch-action: none;
+  user-select: none;
+  -webkit-user-select: none;
 }
 
 #game-stage canvas {
@@ -190,7 +193,7 @@ h1 span {
   letter-spacing: 0.035em;
 }
 
-.overlay-card > p:not(.overlay-kicker):not(.keyboard-hint) {
+.overlay-card > p:not(.overlay-kicker):not(.keyboard-hint):not(.touch-hint) {
   max-width: 440px;
   margin: 9px 0 16px;
   color: #d4dde2;
@@ -230,6 +233,86 @@ h1 span {
 
 .touch-hint {
   display: none;
+}
+
+.touch-hint span {
+  display: block;
+}
+
+.gesture-tracker {
+  --gesture-x: 0px;
+  --gesture-y: 0px;
+  position: absolute;
+  z-index: 5;
+  top: 0;
+  left: 0;
+  display: grid;
+  width: 58px;
+  height: 58px;
+  place-items: center;
+  border: 2px solid rgba(255, 212, 92, 0.88);
+  border-radius: 50%;
+  color: #171006;
+  background: rgba(255, 176, 0, 0.82);
+  box-shadow: 0 0 0 10px rgba(255, 176, 0, 0.12), 0 10px 30px rgba(0, 0, 0, 0.32);
+  font-size: 1.55rem;
+  font-weight: 950;
+  opacity: 0;
+  pointer-events: none;
+  scale: 0.78;
+  transform: translate3d(calc(var(--gesture-x) - 50%), calc(var(--gesture-y) - 50%), 0);
+  transition: opacity 90ms ease, scale 90ms ease;
+  will-change: transform;
+}
+
+.gesture-tracker.is-visible {
+  opacity: 1;
+  scale: 1;
+}
+
+.gesture-feedback {
+  position: absolute;
+  z-index: 5;
+  top: 76px;
+  left: 50%;
+  display: flex;
+  min-height: 38px;
+  align-items: center;
+  gap: 8px;
+  padding: 7px 13px;
+  border: 1px solid rgba(255, 255, 255, 0.22);
+  border-radius: 999px;
+  color: white;
+  background: rgba(8, 15, 20, 0.8);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.3);
+  font-size: 0.7rem;
+  letter-spacing: 0.1em;
+  opacity: 0;
+  pointer-events: none;
+  transform: translate(-50%, -7px) scale(0.94);
+  transition: opacity 120ms ease, transform 160ms ease;
+}
+
+.gesture-feedback span {
+  color: var(--safety-light);
+  font-size: 1.05rem;
+  line-height: 1;
+}
+
+.gesture-feedback.is-visible {
+  opacity: 1;
+  transform: translate(-50%, 0) scale(1);
+}
+
+.gesture-feedback.is-power {
+  border-color: rgba(255, 212, 92, 0.72);
+  color: #181006;
+  background: linear-gradient(180deg, var(--safety-light), var(--safety));
+  box-shadow: 0 8px 26px rgba(255, 176, 0, 0.22);
+}
+
+.gesture-feedback.is-power span {
+  color: #181006;
 }
 
 .touch-controls {
@@ -288,6 +371,20 @@ h1 span {
   background: rgba(255, 176, 0, 0.92);
   font-size: 0.76rem;
   letter-spacing: 0.05em;
+}
+
+.touch-cluster-action {
+  align-items: end;
+}
+
+.touch-crouch {
+  width: 58px;
+  height: 58px;
+  border-color: rgba(185, 197, 203, 0.62);
+  color: #eef4f6;
+  background: rgba(41, 56, 65, 0.86);
+  font-size: 0.62rem;
+  letter-spacing: 0.04em;
 }
 
 .touch-button.is-pressed {
@@ -463,6 +560,20 @@ h1 span {
   }
 }
 
+@media (pointer: coarse) {
+  .keyboard-hint {
+    display: none;
+  }
+
+  .touch-hint {
+    display: block;
+    margin: 10px 0 0;
+    color: #94a5ae;
+    font-size: 0.72rem;
+    line-height: 1.4;
+  }
+}
+
 @media (max-width: 620px), (max-height: 560px) {
   .game-overlay {
     padding: 8px;
@@ -483,7 +594,7 @@ h1 span {
     line-height: 0.95;
   }
 
-  .overlay-card > p:not(.overlay-kicker):not(.keyboard-hint) {
+  .overlay-card > p:not(.overlay-kicker):not(.keyboard-hint):not(.touch-hint) {
     margin: 4px 0 8px;
     font-size: 0.69rem;
     line-height: 1.22;
@@ -533,6 +644,11 @@ h1 span {
   .touch-jump {
     width: 66px;
     height: 66px;
+  }
+
+  .touch-crouch {
+    width: 50px;
+    height: 50px;
   }
 
   .game-footer {
@@ -617,6 +733,15 @@ h1 span {
     background: rgba(255, 176, 0, 0.96);
   }
 
+  .touch-crouch {
+    width: clamp(52px, 15vh, 64px);
+    height: clamp(52px, 15vh, 64px);
+  }
+
+  .gesture-feedback {
+    top: max(55px, calc(env(safe-area-inset-top) + 48px));
+  }
+
   .stage-restart {
     position: absolute;
     z-index: 7;
@@ -638,9 +763,10 @@ h1 span {
 
   .touch-hint {
     display: block;
-    margin: 8px 0 0;
+    margin: 7px 0 0;
     color: #94a5ae;
-    font-size: 0.68rem;
+    font-size: 0.64rem;
+    line-height: 1.35;
   }
 }
 

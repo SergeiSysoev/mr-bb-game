@@ -11,6 +11,13 @@ import {
   isPhoneLandscapeViewport,
   isPhonePortraitViewport,
 } from './viewport.js';
+import {
+  SWIPE_PREVIEW_DISTANCE,
+  classifySwipe,
+  createSwipeSequence,
+  getSwipeAction,
+  reduceGestureIntent,
+} from './gesture-input.js';
 
 const { vec2, rgb } = LJS;
 
@@ -18,7 +25,14 @@ const TOTAL_DUCTS = 10;
 const LEVEL_WIDTH = 54;
 const PLAYER_START = vec2(2.2, 2.1);
 const HERO_SOURCE = new URL('../assets/mr-bb.png', import.meta.url).href;
-const GAMEPLAY_SCROLL_KEYS = new Set(['ArrowLeft', 'ArrowRight', 'ArrowUp', 'Space']);
+const GAMEPLAY_SCROLL_KEYS = new Set(['ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown', 'Space']);
+const MANUAL_MOVEMENT_KEYS = new Set(['ArrowLeft', 'ArrowRight', 'ArrowDown', 'KeyA', 'KeyD', 'KeyS']);
+const RUN_SPEED = 0.19;
+const SPRINT_SPEED = 0.29;
+const JUMP_SPEED = 0.285;
+const HIGH_JUMP_SPEED = 0.39;
+const GESTURE_CROUCH_FRAMES = 45;
+const GESTURE_EDGE_GUARD = 18;
 
 const colors = {
   deep: rgb(0.035, 0.07, 0.09),
@@ -53,6 +67,11 @@ const gameFooter = document.querySelector('.game-footer');
 const page = document.querySelector('.page');
 const orientationGate = document.querySelector('#orientation-gate');
 const portraitContinue = document.querySelector('#portrait-continue');
+const gestureTracker = document.querySelector('#gesture-tracker');
+const gestureTrackerIcon = document.querySelector('#gesture-tracker-icon');
+const gestureFeedback = document.querySelector('#gesture-feedback');
+const gestureFeedbackIcon = document.querySelector('#gesture-feedback-icon');
+const gestureFeedbackLabel = document.querySelector('#gesture-feedback-label');
 
 let gameState = createGameState(TOTAL_DUCTS);
 let player;
@@ -62,12 +81,34 @@ let announcementTimer;
 let portraitOverride = false;
 let viewportSyncFrame = 0;
 let lastCanvasSize = '';
+let activeGesture = null;
+let gestureFeedbackTimer;
+let gestureCrouchFrames = 0;
+let gestureIntent = { direction: 0, sprint: false, crouching: false };
 
 const pointerControls = {
   left: new Set(),
   right: new Set(),
   jump: new Set(),
+  crouch: new Set(),
   jumpQueued: false,
+};
+
+const gestureJump = {
+  normalQueued: false,
+  highQueued: false,
+  holdFrames: 0,
+};
+
+const swipeSequence = createSwipeSequence();
+
+const gestureFeedbackContent = {
+  run: { icon: '→', label: 'AUTO RUN', power: false, persistent: true },
+  sprint: { icon: '»', label: 'SPRINT', power: true, persistent: true },
+  back: { icon: '←', label: 'BACK', power: false, persistent: true },
+  jump: { icon: '↑', label: 'JUMP', power: false, persistent: false },
+  'high-jump': { icon: '⇈', label: 'HIGH JUMP', power: true, persistent: false },
+  crouch: { icon: '↓', label: 'CROUCH', power: false, persistent: false },
 };
 
 function formatScore(score) {
@@ -92,7 +133,70 @@ function announce(message) {
   }, 2200);
 }
 
+function hideGestureFeedback() {
+  window.clearTimeout(gestureFeedbackTimer);
+  gestureFeedback.classList.remove('is-visible', 'is-power');
+}
+
+function showGestureFeedback(action) {
+  const content = gestureFeedbackContent[action];
+  if (!content) {
+    return;
+  }
+
+  window.clearTimeout(gestureFeedbackTimer);
+  gestureFeedbackIcon.textContent = content.icon;
+  gestureFeedbackLabel.textContent = content.label;
+  gestureFeedback.classList.toggle('is-power', content.power);
+  gestureFeedback.classList.add('is-visible');
+
+  if (!content.persistent) {
+    gestureFeedbackTimer = window.setTimeout(() => {
+      if (gestureIntent.sprint) {
+        showGestureFeedback('sprint');
+      } else if (gestureIntent.direction > 0) {
+        showGestureFeedback('run');
+      } else if (gestureIntent.direction < 0) {
+        showGestureFeedback('back');
+      } else {
+        hideGestureFeedback();
+      }
+    }, 720);
+  }
+}
+
+function hideGestureTracker() {
+  gestureTracker.classList.remove('is-visible');
+  gestureTrackerIcon.textContent = '•';
+}
+
+function clearActiveGesture() {
+  const pointerId = activeGesture?.pointerId;
+  activeGesture = null;
+  hideGestureTracker();
+
+  if (pointerId !== undefined && gameStage.hasPointerCapture(pointerId)) {
+    gameStage.releasePointerCapture(pointerId);
+  }
+}
+
+function clearGestureMotion() {
+  gestureIntent = { direction: 0, sprint: false, crouching: false };
+  gestureCrouchFrames = 0;
+  hideGestureFeedback();
+}
+
+function clearGestureControls() {
+  clearGestureMotion();
+  gestureJump.normalQueued = false;
+  gestureJump.highQueued = false;
+  gestureJump.holdFrames = 0;
+  swipeSequence.reset();
+  clearActiveGesture();
+}
+
 function showOverlay(title, copy, actionLabel) {
+  clearAllControls();
   overlayTitle.textContent = title;
   overlayCopy.textContent = copy;
   overlayAction.textContent = actionLabel;
@@ -113,11 +217,17 @@ function hideOverlay() {
 }
 
 function clearPointerControls() {
-  for (const key of ['left', 'right', 'jump']) {
+  for (const key of ['left', 'right', 'jump', 'crouch']) {
     pointerControls[key].clear();
   }
   pointerControls.jumpQueued = false;
   document.querySelectorAll('.touch-button').forEach((button) => button.classList.remove('is-pressed'));
+}
+
+function clearAllControls() {
+  clearPointerControls();
+  clearGestureControls();
+  player?.setCrouching(false);
 }
 
 function getViewportDimensions() {
@@ -148,7 +258,7 @@ function syncOrientationGate(width, height, coarsePointer) {
 
   if (shouldShowGate) {
     page.setAttribute('aria-hidden', 'true');
-    clearPointerControls();
+    clearAllControls();
     if (!gateWasVisible) {
       requestAnimationFrame(() => portraitContinue.focus({ preventScroll: true }));
     }
@@ -188,20 +298,43 @@ function controlIsDown(name) {
   return pointerControls[name].size > 0;
 }
 
-function inputDirection() {
+function inputMovement() {
   const left = LJS.keyIsDown('ArrowLeft') || LJS.keyIsDown('KeyA') || controlIsDown('left');
   const right = LJS.keyIsDown('ArrowRight') || LJS.keyIsDown('KeyD') || controlIsDown('right');
-  return Number(right) - Number(left);
+  if (left || right) {
+    return { direction: Number(right) - Number(left), sprint: false };
+  }
+
+  return { direction: gestureIntent.direction, sprint: gestureIntent.sprint };
 }
 
-function jumpWasPressed() {
-  const pressed =
+function consumeJumpRequest() {
+  const normalQueued =
     LJS.keyWasPressed('ArrowUp') ||
     LJS.keyWasPressed('KeyW') ||
     LJS.keyWasPressed('Space') ||
-    pointerControls.jumpQueued;
+    pointerControls.jumpQueued ||
+    gestureJump.normalQueued;
+  const highQueued = gestureJump.highQueued;
+
   pointerControls.jumpQueued = false;
-  return pressed;
+  gestureJump.normalQueued = false;
+  gestureJump.highQueued = false;
+
+  if (highQueued) {
+    return HIGH_JUMP_SPEED;
+  }
+
+  return normalQueued ? JUMP_SPEED : 0;
+}
+
+function crouchIsDown() {
+  return (
+    LJS.keyIsDown('ArrowDown') ||
+    LJS.keyIsDown('KeyS') ||
+    controlIsDown('crouch') ||
+    gestureCrouchFrames > 0
+  );
 }
 
 function jumpIsDown() {
@@ -209,8 +342,158 @@ function jumpIsDown() {
     LJS.keyIsDown('ArrowUp') ||
     LJS.keyIsDown('KeyW') ||
     LJS.keyIsDown('Space') ||
-    controlIsDown('jump')
+    controlIsDown('jump') ||
+    gestureJump.holdFrames > 0
   );
+}
+
+function cancelGestureMotionForManualInput() {
+  clearGestureMotion();
+  swipeSequence.reset();
+  clearActiveGesture();
+}
+
+function applySwipeAction(action) {
+  gestureIntent = reduceGestureIntent(gestureIntent, action);
+
+  if (action === 'crouch') {
+    gestureCrouchFrames = GESTURE_CROUCH_FRAMES;
+  } else {
+    gestureCrouchFrames = 0;
+  }
+
+  if (action === 'jump') {
+    gestureJump.normalQueued = true;
+    gestureJump.holdFrames = Math.max(gestureJump.holdFrames, 12);
+  } else if (action === 'high-jump') {
+    gestureJump.normalQueued = false;
+    gestureJump.highQueued = true;
+    gestureJump.holdFrames = Math.max(gestureJump.holdFrames, 18);
+  }
+
+  showGestureFeedback(action);
+}
+
+function commitSwipe(direction, time) {
+  const sequence = swipeSequence.register(direction, time);
+  const action = getSwipeAction(sequence.direction, sequence.isDouble);
+  if (action) {
+    applySwipeAction(action);
+  }
+}
+
+function getGesturePoint(event) {
+  const rect = gameStage.getBoundingClientRect();
+  return {
+    x: event.clientX - rect.left,
+    y: event.clientY - rect.top,
+    width: rect.width,
+    height: rect.height,
+  };
+}
+
+function updateGestureTracker(point, direction = null) {
+  const icons = { left: '←', right: '→', up: '↑', down: '↓' };
+  gestureTracker.style.setProperty('--gesture-x', `${point.x}px`);
+  gestureTracker.style.setProperty('--gesture-y', `${point.y}px`);
+  gestureTrackerIcon.textContent = icons[direction] || '•';
+  gestureTracker.classList.add('is-visible');
+}
+
+function gestureCanStart(event, point) {
+  const target = event.target;
+  const isInteractive =
+    target instanceof Element && Boolean(target.closest('button, a, input, [data-control]'));
+  const isGesturePointer =
+    event.pointerType === 'touch' ||
+    event.pointerType === 'pen' ||
+    (event.pointerType === 'mouse' && event.button === 0);
+  const nearSystemEdge =
+    point.x < GESTURE_EDGE_GUARD ||
+    point.x > point.width - GESTURE_EDGE_GUARD ||
+    point.y < GESTURE_EDGE_GUARD ||
+    point.y > point.height - GESTURE_EDGE_GUARD;
+
+  return (
+    isGesturePointer &&
+    !isInteractive &&
+    !nearSystemEdge &&
+    gameState.status === 'playing' &&
+    overlay.classList.contains('is-hidden') &&
+    orientationGate.hidden
+  );
+}
+
+function handleGestureStart(event) {
+  if (activeGesture) {
+    return;
+  }
+
+  const point = getGesturePoint(event);
+  if (!gestureCanStart(event, point)) {
+    return;
+  }
+
+  event.preventDefault();
+  activeGesture = {
+    pointerId: event.pointerId,
+    startX: point.x,
+    startY: point.y,
+    committed: false,
+  };
+  gameStage.setPointerCapture(event.pointerId);
+  updateGestureTracker(point);
+}
+
+function handleGestureMove(event) {
+  if (!activeGesture || event.pointerId !== activeGesture.pointerId) {
+    return;
+  }
+
+  event.preventDefault();
+  const point = getGesturePoint(event);
+  const swipe = {
+    startX: activeGesture.startX,
+    startY: activeGesture.startY,
+    endX: point.x,
+    endY: point.y,
+  };
+  const previewDirection = classifySwipe(swipe, {
+    minDistance: SWIPE_PREVIEW_DISTANCE,
+    axisBias: 1.05,
+  });
+  updateGestureTracker(point, previewDirection);
+
+  if (activeGesture.committed) {
+    return;
+  }
+
+  const direction = classifySwipe(swipe);
+  if (direction) {
+    activeGesture.committed = true;
+    commitSwipe(direction, event.timeStamp);
+  }
+}
+
+function finishGesture(event, commitOnRelease) {
+  if (!activeGesture || event.pointerId !== activeGesture.pointerId) {
+    return;
+  }
+
+  if (commitOnRelease && !activeGesture.committed) {
+    const point = getGesturePoint(event);
+    const direction = classifySwipe({
+      startX: activeGesture.startX,
+      startY: activeGesture.startY,
+      endX: point.x,
+      endY: point.y,
+    });
+    if (direction) {
+      commitSwipe(direction, event.timeStamp);
+    }
+  }
+
+  clearActiveGesture();
 }
 
 class Platform extends LJS.EngineObject {
@@ -355,13 +638,33 @@ class MasticBucket extends LJS.EngineObject {
 class Player extends LJS.EngineObject {
   constructor(pos) {
     super(pos, vec2(0.68, 1.03));
-    this.drawSize = vec2(1.28, 1.35);
+    this.standingSize = vec2(0.68, 1.03);
+    this.crouchingSize = vec2(0.68, 0.66);
+    this.standingDrawSize = vec2(1.28, 1.35);
+    this.crouchingDrawSize = vec2(1.34, 0.88);
+    this.drawSize = this.standingDrawSize.copy();
     this.renderOrder = 20;
     this.coyoteFrames = 0;
     this.jumpBufferFrames = 0;
+    this.jumpBufferSpeed = JUMP_SPEED;
+    this.jumpUpgradeFrames = 0;
     this.invulnerableFrames = 0;
     this.mirror = false;
+    this.crouching = false;
     this.setCollision(true, false, false);
+  }
+
+  setCrouching(nextCrouching) {
+    if (this.crouching === nextCrouching) {
+      return;
+    }
+
+    const nextSize = nextCrouching ? this.crouchingSize : this.standingSize;
+    const nextDrawSize = nextCrouching ? this.crouchingDrawSize : this.standingDrawSize;
+    this.pos.y += (nextSize.y - this.size.y) / 2;
+    this.size = nextSize.copy();
+    this.drawSize = nextDrawSize.copy();
+    this.crouching = nextCrouching;
   }
 
   respawnAfterFall() {
@@ -372,6 +675,7 @@ class Player extends LJS.EngineObject {
     const previousState = gameState;
     gameState = takeFallHit(gameState, this.invulnerableFrames);
     const tookDamage = gameState !== previousState;
+    clearAllControls();
     updateHud();
 
     if (gameState.status === 'lost') {
@@ -392,6 +696,7 @@ class Player extends LJS.EngineObject {
     }
 
     gameState = takeMasticHit(gameState);
+    clearAllControls();
     updateHud();
     this.invulnerableFrames = 100;
     const direction = Math.sign(this.pos.x - bucket.pos.x) || 1;
@@ -419,14 +724,43 @@ class Player extends LJS.EngineObject {
       return;
     }
 
-    const direction = inputDirection();
     const grounded = Boolean(this.groundObject);
+    const requestedJumpSpeed = consumeJumpRequest();
+    const shouldCrouch = grounded && crouchIsDown() && !requestedJumpSpeed;
+    this.setCrouching(shouldCrouch);
+
+    if (gestureCrouchFrames > 0) {
+      gestureCrouchFrames -= 1;
+      if (gestureCrouchFrames === 0) {
+        gestureIntent = { ...gestureIntent, crouching: false };
+      }
+    }
+
+    if (gestureJump.holdFrames > 0) {
+      gestureJump.holdFrames -= 1;
+    }
+
+    const movement = inputMovement();
+    const direction = shouldCrouch ? 0 : movement.direction;
 
     this.coyoteFrames = grounded ? 8 : Math.max(0, this.coyoteFrames - 1);
-    this.jumpBufferFrames = jumpWasPressed() ? 8 : Math.max(0, this.jumpBufferFrames - 1);
+    this.jumpUpgradeFrames = Math.max(0, this.jumpUpgradeFrames - 1);
+
+    if (requestedJumpSpeed === HIGH_JUMP_SPEED && this.jumpUpgradeFrames > 0 && !grounded) {
+      this.velocity.y = Math.max(this.velocity.y, HIGH_JUMP_SPEED);
+      this.jumpUpgradeFrames = 0;
+      this.jumpBufferFrames = 0;
+    } else if (requestedJumpSpeed) {
+      this.jumpBufferFrames = 8;
+      this.jumpBufferSpeed = requestedJumpSpeed;
+    } else {
+      this.jumpBufferFrames = Math.max(0, this.jumpBufferFrames - 1);
+    }
 
     if (this.jumpBufferFrames > 0 && this.coyoteFrames > 0) {
-      this.velocity.y = 0.285;
+      this.setCrouching(false);
+      this.velocity.y = this.jumpBufferSpeed;
+      this.jumpUpgradeFrames = this.jumpBufferSpeed === JUMP_SPEED ? 26 : 0;
       this.jumpBufferFrames = 0;
       this.coyoteFrames = 0;
     }
@@ -435,11 +769,22 @@ class Player extends LJS.EngineObject {
       this.velocity.y *= 0.72;
     }
 
-    const acceleration = grounded ? 0.027 : 0.013;
-    this.velocity.x = LJS.clamp(this.velocity.x + direction * acceleration, -0.19, 0.19);
+    const maxSpeed = movement.sprint && direction > 0 ? SPRINT_SPEED : RUN_SPEED;
+    const acceleration = grounded
+      ? movement.sprint && direction > 0
+        ? 0.041
+        : 0.027
+      : movement.sprint && direction > 0
+        ? 0.019
+        : 0.013;
+    this.velocity.x = LJS.clamp(
+      this.velocity.x + direction * acceleration,
+      -RUN_SPEED,
+      maxSpeed,
+    );
 
     if (!direction) {
-      this.velocity.x *= grounded ? 0.72 : 0.96;
+      this.velocity.x *= grounded ? (shouldCrouch ? 0.48 : 0.72) : 0.96;
     }
 
     if (direction) {
@@ -449,10 +794,10 @@ class Player extends LJS.EngineObject {
 
   render() {
     const moving = Math.abs(this.velocity.x) > 0.02;
-    const bob = this.groundObject && moving ? Math.sin(LJS.time * 15) * 0.045 : 0;
+    const bob = this.groundObject && moving && !this.crouching ? Math.sin(LJS.time * 15) * 0.045 : 0;
     const tint = this.invulnerableFrames > 0 && Math.floor(this.invulnerableFrames / 6) % 2 ? rgb(1, 1, 1, 0.25) : rgb(1, 1, 1);
     LJS.drawTile(
-      this.pos.add(vec2(0, 0.18 + bob)),
+      this.pos.add(vec2(0, (this.crouching ? 0.08 : 0.18) + bob)),
       this.drawSize,
       heroTile,
       tint,
@@ -513,7 +858,7 @@ function setupWorld(status = 'intro') {
 
   player = new Player(PLAYER_START.copy());
   LJS.setCameraPos(vec2(8, 6));
-  clearPointerControls();
+  clearAllControls();
   updateHud();
 }
 
@@ -618,6 +963,9 @@ document.querySelectorAll('[data-control]').forEach((button) => {
   const control = button.dataset.control;
 
   const press = (token) => {
+    if (control === 'left' || control === 'right' || control === 'crouch') {
+      cancelGestureMotionForManualInput();
+    }
     pointerControls[control].add(token);
     button.classList.add('is-pressed');
     if (control === 'jump') {
@@ -656,24 +1004,33 @@ document.querySelectorAll('[data-control]').forEach((button) => {
   });
 });
 
+gameStage.addEventListener('pointerdown', handleGestureStart);
+gameStage.addEventListener('pointermove', handleGestureMove, { passive: false });
+gameStage.addEventListener('pointerup', (event) => finishGesture(event, true));
+gameStage.addEventListener('pointercancel', (event) => finishGesture(event, false));
+gameStage.addEventListener('lostpointercapture', (event) => finishGesture(event, false));
 overlayAction.addEventListener('click', beginRun);
 restartButtons.forEach((button) => button.addEventListener('click', restartRun));
 portraitContinue.addEventListener('click', () => {
   portraitOverride = true;
   syncViewportLayout();
 });
-window.addEventListener('blur', clearPointerControls);
+window.addEventListener('blur', clearAllControls);
 window.addEventListener('resize', scheduleViewportSync);
 window.addEventListener('orientationchange', scheduleViewportSync);
 window.visualViewport?.addEventListener('resize', scheduleViewportSync);
 screen.orientation?.addEventListener('change', scheduleViewportSync);
 document.addEventListener('visibilitychange', () => {
   if (document.hidden) {
-    clearPointerControls();
+    clearAllControls();
   }
   syncViewportLayout();
 });
 document.addEventListener('keydown', (event) => {
+  if (gameState.status === 'playing' && MANUAL_MOVEMENT_KEYS.has(event.code)) {
+    cancelGestureMotionForManualInput();
+  }
+
   if (
     gameState.status === 'playing' &&
     document.activeElement === gameStage &&

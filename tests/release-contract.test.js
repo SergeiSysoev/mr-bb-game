@@ -78,3 +78,25 @@ test('the mobile release contract includes landscape and safe-area support', asy
   assert.deepEqual(manifest.display_override, ['fullscreen', 'standalone']);
   assert.equal(manifest.icons[0].src, './mr-bb-icon.svg');
 });
+
+test('touch players get discoverable swipe controls with button and keyboard fallbacks', async () => {
+  const [markup, styles, gameSource] = await Promise.all([
+    readProjectFile('index.html'),
+    readProjectFile('styles.css'),
+    readProjectFile('src/game.js'),
+  ]);
+
+  assert.match(markup, /Swipe → run · ← back · ↑ jump · ↓ crouch/);
+  assert.match(markup, /Double swipe ↑ high jump · → sprint/);
+  assert.match(markup, /data-control="crouch"/);
+  assert.match(styles, /#game-stage[^{]*\{[^}]*touch-action:\s*none/s);
+  assert.match(gameSource, /pointerType === 'touch'/);
+  assert.match(gameSource, /addEventListener\('pointerdown', handleGestureStart\)/);
+  assert.match(gameSource, /LJS\.keyIsDown\('ArrowDown'\)/);
+  assert.match(
+    gameSource,
+    /function cancelGestureMotionForManualInput\(\).*clearActiveGesture\(\)/s,
+  );
+  assert.match(styles, /@media \(pointer:\s*coarse\)[^{]*\{.*\.touch-hint\s*\{[^}]*display:\s*block/s);
+  assert.match(gameSource, /clearAllControls\(\).*Player/s);
+});
