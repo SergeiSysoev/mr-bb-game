@@ -62,7 +62,10 @@ const restartButtons = document.querySelectorAll('[data-action="restart"]');
 const stageRestartButton = document.querySelector('#stage-restart-button');
 const announcement = document.querySelector('#game-announcement');
 const gameStage = document.querySelector('#game-stage');
-const touchControls = document.querySelector('.touch-controls');
+const accessibleControls = document.querySelector('#accessible-controls');
+const accessibleControlButtons = document.querySelectorAll('[data-accessible-action]');
+const tapControlsToggle = document.querySelector('#tap-controls-toggle');
+const tapControlsHide = document.querySelector('#tap-controls-hide');
 const gameFooter = document.querySelector('.game-footer');
 const page = document.querySelector('.page');
 const orientationGate = document.querySelector('#orientation-gate');
@@ -85,14 +88,7 @@ let activeGesture = null;
 let gestureFeedbackTimer;
 let gestureCrouchFrames = 0;
 let gestureIntent = { direction: 0, sprint: false, crouching: false };
-
-const pointerControls = {
-  left: new Set(),
-  right: new Set(),
-  jump: new Set(),
-  crouch: new Set(),
-  jumpQueued: false,
-};
+let accessibleControlsEnabled = false;
 
 const gestureJump = {
   normalQueued: false,
@@ -109,6 +105,15 @@ const gestureFeedbackContent = {
   jump: { icon: '↑', label: 'JUMP', power: false, persistent: false },
   'high-jump': { icon: '⇈', label: 'HIGH JUMP', power: true, persistent: false },
   crouch: { icon: '↓', label: 'CROUCH', power: false, persistent: false },
+};
+
+const accessibleActionAnnouncements = {
+  run: 'Running forward.',
+  sprint: 'Sprinting forward.',
+  back: 'Moving back.',
+  jump: 'Jump.',
+  'high-jump': 'High jump.',
+  crouch: 'Stopped and crouching.',
 };
 
 function formatScore(score) {
@@ -195,37 +200,46 @@ function clearGestureControls() {
   clearActiveGesture();
 }
 
+function syncAccessibleControls() {
+  const shouldShow =
+    accessibleControlsEnabled &&
+    gameState.status === 'playing' &&
+    overlay.classList.contains('is-hidden');
+
+  accessibleControls.hidden = !shouldShow;
+  accessibleControls.toggleAttribute('inert', !shouldShow);
+}
+
+function setAccessibleControlsEnabled(enabled) {
+  accessibleControlsEnabled = Boolean(enabled);
+  tapControlsToggle.setAttribute('aria-pressed', String(accessibleControlsEnabled));
+  tapControlsToggle.textContent = accessibleControlsEnabled ? 'TAP CONTROLS ON' : 'USE TAP CONTROLS';
+  syncAccessibleControls();
+  announce(accessibleControlsEnabled ? 'Tap controls enabled.' : 'Tap controls hidden. Swipe controls remain active.');
+}
+
 function showOverlay(title, copy, actionLabel) {
   clearAllControls();
   overlayTitle.textContent = title;
   overlayCopy.textContent = copy;
   overlayAction.textContent = actionLabel;
   overlay.removeAttribute('aria-hidden');
-  touchControls.inert = true;
   gameFooter.inert = true;
   stageRestartButton.inert = true;
   overlay.classList.remove('is-hidden');
+  syncAccessibleControls();
   overlayAction.focus({ preventScroll: true });
 }
 
 function hideOverlay() {
   overlay.classList.add('is-hidden');
   overlay.setAttribute('aria-hidden', 'true');
-  touchControls.inert = false;
   gameFooter.inert = false;
   stageRestartButton.inert = false;
-}
-
-function clearPointerControls() {
-  for (const key of ['left', 'right', 'jump', 'crouch']) {
-    pointerControls[key].clear();
-  }
-  pointerControls.jumpQueued = false;
-  document.querySelectorAll('.touch-button').forEach((button) => button.classList.remove('is-pressed'));
+  syncAccessibleControls();
 }
 
 function clearAllControls() {
-  clearPointerControls();
   clearGestureControls();
   player?.setCrouching(false);
 }
@@ -294,13 +308,9 @@ function scheduleViewportSync() {
   viewportSyncFrame = requestAnimationFrame(syncViewportLayout);
 }
 
-function controlIsDown(name) {
-  return pointerControls[name].size > 0;
-}
-
 function inputMovement() {
-  const left = LJS.keyIsDown('ArrowLeft') || LJS.keyIsDown('KeyA') || controlIsDown('left');
-  const right = LJS.keyIsDown('ArrowRight') || LJS.keyIsDown('KeyD') || controlIsDown('right');
+  const left = LJS.keyIsDown('ArrowLeft') || LJS.keyIsDown('KeyA');
+  const right = LJS.keyIsDown('ArrowRight') || LJS.keyIsDown('KeyD');
   if (left || right) {
     return { direction: Number(right) - Number(left), sprint: false };
   }
@@ -313,11 +323,9 @@ function consumeJumpRequest() {
     LJS.keyWasPressed('ArrowUp') ||
     LJS.keyWasPressed('KeyW') ||
     LJS.keyWasPressed('Space') ||
-    pointerControls.jumpQueued ||
     gestureJump.normalQueued;
   const highQueued = gestureJump.highQueued;
 
-  pointerControls.jumpQueued = false;
   gestureJump.normalQueued = false;
   gestureJump.highQueued = false;
 
@@ -332,7 +340,6 @@ function crouchIsDown() {
   return (
     LJS.keyIsDown('ArrowDown') ||
     LJS.keyIsDown('KeyS') ||
-    controlIsDown('crouch') ||
     gestureCrouchFrames > 0
   );
 }
@@ -342,7 +349,6 @@ function jumpIsDown() {
     LJS.keyIsDown('ArrowUp') ||
     LJS.keyIsDown('KeyW') ||
     LJS.keyIsDown('Space') ||
-    controlIsDown('jump') ||
     gestureJump.holdFrames > 0
   );
 }
@@ -374,6 +380,15 @@ function applySwipeAction(action) {
   showGestureFeedback(action);
 }
 
+function activateAccessibleControl(action) {
+  if (gameState.status !== 'playing' || !(action in accessibleActionAnnouncements)) {
+    return;
+  }
+
+  applySwipeAction(action);
+  announce(accessibleActionAnnouncements[action]);
+}
+
 function commitSwipe(direction, time) {
   const sequence = swipeSequence.register(direction, time);
   const action = getSwipeAction(sequence.direction, sequence.isDouble);
@@ -403,7 +418,7 @@ function updateGestureTracker(point, direction = null) {
 function gestureCanStart(event, point) {
   const target = event.target;
   const isInteractive =
-    target instanceof Element && Boolean(target.closest('button, a, input, [data-control]'));
+    target instanceof Element && Boolean(target.closest('button, a, input'));
   const isGesturePointer =
     event.pointerType === 'touch' ||
     event.pointerType === 'pen' ||
@@ -959,56 +974,21 @@ function gameRender() {
 
 function gameRenderPost() {}
 
-document.querySelectorAll('[data-control]').forEach((button) => {
-  const control = button.dataset.control;
-
-  const press = (token) => {
-    if (control === 'left' || control === 'right' || control === 'crouch') {
-      cancelGestureMotionForManualInput();
-    }
-    pointerControls[control].add(token);
-    button.classList.add('is-pressed');
-    if (control === 'jump') {
-      pointerControls.jumpQueued = true;
-    }
-  };
-
-  const release = (event) => {
-    pointerControls[control].delete(event.pointerId);
-    if (pointerControls[control].size === 0) {
-      button.classList.remove('is-pressed');
-    }
-  };
-
-  button.addEventListener('pointerdown', (event) => {
-    event.preventDefault();
-    button.setPointerCapture(event.pointerId);
-    press(event.pointerId);
-  });
-  button.addEventListener('pointerup', release);
-  button.addEventListener('pointercancel', release);
-  button.addEventListener('lostpointercapture', release);
-  button.addEventListener('click', (event) => {
-    if (event.detail !== 0) {
-      return;
-    }
-
-    const token = `activation:${control}`;
-    press(token);
-    window.setTimeout(() => {
-      pointerControls[control].delete(token);
-      if (pointerControls[control].size === 0) {
-        button.classList.remove('is-pressed');
-      }
-    }, control === 'jump' ? 60 : 180);
-  });
-});
-
 gameStage.addEventListener('pointerdown', handleGestureStart);
 gameStage.addEventListener('pointermove', handleGestureMove, { passive: false });
 gameStage.addEventListener('pointerup', (event) => finishGesture(event, true));
 gameStage.addEventListener('pointercancel', (event) => finishGesture(event, false));
 gameStage.addEventListener('lostpointercapture', (event) => finishGesture(event, false));
+accessibleControlButtons.forEach((button) => {
+  button.addEventListener('click', () => activateAccessibleControl(button.dataset.accessibleAction));
+});
+tapControlsToggle.addEventListener('click', () => {
+  setAccessibleControlsEnabled(!accessibleControlsEnabled);
+});
+tapControlsHide.addEventListener('click', () => {
+  setAccessibleControlsEnabled(false);
+  gameStage.focus({ preventScroll: true });
+});
 overlayAction.addEventListener('click', beginRun);
 restartButtons.forEach((button) => button.addEventListener('click', restartRun));
 portraitContinue.addEventListener('click', () => {

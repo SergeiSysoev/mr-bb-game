@@ -16,7 +16,7 @@ Build and maintain a small, original HVAC construction platformer for the web.
 
 ## Architecture
 
-- `index.html` and `styles.css`: page, HUD, overlays, touch controls.
+- `index.html` and `styles.css`: page, HUD, overlays, gesture feedback, and opt-in accessible tap controls.
 - `src/game.js`: LittleJS world, objects, rendering, input, and DOM integration.
 - `src/game-logic.js`: pure scoring and life-state rules.
 - `tests/`: Node test runner coverage for pure game rules.

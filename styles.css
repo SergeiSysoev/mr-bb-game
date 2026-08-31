@@ -225,6 +225,26 @@ h1 span {
   opacity: 0.65;
 }
 
+.tap-controls-toggle {
+  min-height: 44px;
+  margin-top: 12px;
+  padding: 0 16px;
+  border: 1px solid rgba(255, 255, 255, 0.25);
+  border-radius: 999px;
+  color: #dce5e9;
+  background: rgba(255, 255, 255, 0.07);
+  font-size: 0.68rem;
+  font-weight: 850;
+  letter-spacing: 0.06em;
+  cursor: pointer;
+}
+
+.tap-controls-toggle[aria-pressed="true"] {
+  border-color: rgba(255, 212, 92, 0.72);
+  color: var(--safety-light);
+  background: rgba(255, 176, 0, 0.12);
+}
+
 .keyboard-hint {
   margin: 15px 0 0;
   color: #83939e;
@@ -315,85 +335,51 @@ h1 span {
   color: #181006;
 }
 
-.touch-controls {
+.stage-restart {
+  display: none;
+}
+
+.accessible-controls {
   position: absolute;
   z-index: 6;
-  right: 15px;
-  bottom: 15px;
-  left: 15px;
+  right: max(15px, env(safe-area-inset-right));
+  bottom: max(15px, calc(env(safe-area-inset-bottom) + 5px));
+  left: max(15px, env(safe-area-inset-left));
   display: flex;
-  align-items: end;
-  justify-content: space-between;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 8px;
   pointer-events: none;
 }
 
-.touch-cluster {
-  display: flex;
-  gap: 10px;
-}
-
-.touch-pad {
-  display: grid;
-  justify-items: center;
-  gap: 5px;
-}
-
-.touch-label {
-  color: rgba(255, 255, 255, 0.76);
-  font-size: 0.58rem;
-  font-weight: 900;
-  letter-spacing: 0.14em;
-  text-shadow: 0 2px 5px #000;
-}
-
-.touch-button {
-  display: grid;
-  width: 68px;
-  height: 68px;
-  place-items: center;
-  border: 1px solid rgba(255, 255, 255, 0.34);
-  border-radius: 50%;
-  color: white;
-  background: rgba(8, 15, 20, 0.72);
-  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.28), inset 0 1px rgba(255, 255, 255, 0.16);
-  font-size: 1.65rem;
-  font-weight: 900;
-  pointer-events: auto;
-  touch-action: none;
-  -webkit-tap-highlight-color: transparent;
-}
-
-.touch-jump {
-  width: 76px;
-  height: 76px;
-  border-color: rgba(255, 212, 92, 0.8);
-  color: #201607;
-  background: rgba(255, 176, 0, 0.92);
-  font-size: 0.76rem;
-  letter-spacing: 0.05em;
-}
-
-.touch-cluster-action {
-  align-items: end;
-}
-
-.touch-crouch {
-  width: 58px;
-  height: 58px;
-  border-color: rgba(185, 197, 203, 0.62);
-  color: #eef4f6;
-  background: rgba(41, 56, 65, 0.86);
-  font-size: 0.62rem;
-  letter-spacing: 0.04em;
-}
-
-.touch-button.is-pressed {
-  scale: 0.92;
-  filter: brightness(1.2);
-}
-
-.stage-restart {
+.accessible-controls[hidden] {
   display: none;
+}
+
+.accessible-controls button {
+  min-width: 64px;
+  min-height: 48px;
+  padding: 0 12px;
+  border: 1px solid rgba(255, 255, 255, 0.4);
+  border-radius: 999px;
+  color: white;
+  background: rgba(8, 15, 20, 0.88);
+  box-shadow: 0 7px 18px rgba(0, 0, 0, 0.35);
+  font-size: 0.65rem;
+  font-weight: 900;
+  letter-spacing: 0.04em;
+  pointer-events: auto;
+  touch-action: manipulation;
+}
+
+.accessible-controls button:focus-visible {
+  outline: 3px solid var(--safety-light);
+  outline-offset: 2px;
+}
+
+.accessible-controls button:active {
+  scale: 0.94;
+  filter: brightness(1.2);
 }
 
 .game-footer {
@@ -550,16 +536,6 @@ h1 span {
   border: 0;
 }
 
-@media (hover: hover) and (pointer: fine) {
-  .touch-controls {
-    opacity: 0.38;
-  }
-
-  .touch-controls:hover {
-    opacity: 1;
-  }
-}
-
 @media (pointer: coarse) {
   .keyboard-hint {
     display: none;
@@ -630,27 +606,6 @@ h1 span {
     padding: 11px 12px 23px;
   }
 
-  .touch-controls {
-    right: max(10px, env(safe-area-inset-right));
-    bottom: 10px;
-    left: max(10px, env(safe-area-inset-left));
-  }
-
-  .touch-button {
-    width: 58px;
-    height: 58px;
-  }
-
-  .touch-jump {
-    width: 66px;
-    height: 66px;
-  }
-
-  .touch-crouch {
-    width: 50px;
-    height: 50px;
-  }
-
   .game-footer {
     gap: 10px;
     padding: 8px 10px;
@@ -711,31 +666,6 @@ h1 span {
       max(18px, calc(env(safe-area-inset-right) + 10px))
       25px
       max(18px, calc(env(safe-area-inset-left) + 10px));
-  }
-
-  .touch-controls {
-    right: max(14px, calc(env(safe-area-inset-right) + 8px));
-    bottom: max(12px, calc(env(safe-area-inset-bottom) + 5px));
-    left: max(14px, calc(env(safe-area-inset-left) + 8px));
-  }
-
-  .touch-button {
-    width: clamp(64px, 18vh, 76px);
-    height: clamp(64px, 18vh, 76px);
-    border-width: 2px;
-    background: rgba(8, 15, 20, 0.78);
-    box-shadow: 0 8px 20px rgba(0, 0, 0, 0.38), inset 0 1px rgba(255, 255, 255, 0.2);
-  }
-
-  .touch-jump {
-    width: clamp(74px, 21vh, 88px);
-    height: clamp(74px, 21vh, 88px);
-    background: rgba(255, 176, 0, 0.96);
-  }
-
-  .touch-crouch {
-    width: clamp(52px, 15vh, 64px);
-    height: clamp(52px, 15vh, 64px);
   }
 
   .gesture-feedback {

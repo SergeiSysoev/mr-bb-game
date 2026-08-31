@@ -79,7 +79,7 @@ test('the mobile release contract includes landscape and safe-area support', asy
   assert.equal(manifest.icons[0].src, './mr-bb-icon.svg');
 });
 
-test('touch players get discoverable swipe controls with button and keyboard fallbacks', async () => {
+test('touch players get a gesture-only default with opt-in accessible tap controls', async () => {
   const [markup, styles, gameSource] = await Promise.all([
     readProjectFile('index.html'),
     readProjectFile('styles.css'),
@@ -88,8 +88,15 @@ test('touch players get discoverable swipe controls with button and keyboard fal
 
   assert.match(markup, /Swipe → run · ← back · ↑ jump · ↓ crouch/);
   assert.match(markup, /Double swipe ↑ high jump · → sprint/);
-  assert.match(markup, /data-control="crouch"/);
+  assert.doesNotMatch(markup, /class="touch-controls"/);
+  assert.doesNotMatch(markup, /data-control=/);
+  assert.match(markup, /id="tap-controls-toggle"[\s\S]*aria-pressed="false"/);
+  assert.match(markup, /id="accessible-controls"[\s\S]*hidden[\s\S]*inert/);
+  assert.match(markup, /data-accessible-action="run"/);
+  assert.match(markup, /data-accessible-action="high-jump"/);
   assert.match(styles, /#game-stage[^{]*\{[^}]*touch-action:\s*none/s);
+  assert.match(styles, /\.accessible-controls\[hidden\][^{]*\{[^}]*display:\s*none/s);
+  assert.match(styles, /\.accessible-controls button[^{]*\{[^}]*min-height:\s*48px/s);
   assert.match(gameSource, /pointerType === 'touch'/);
   assert.match(gameSource, /addEventListener\('pointerdown', handleGestureStart\)/);
   assert.match(gameSource, /LJS\.keyIsDown\('ArrowDown'\)/);
@@ -98,5 +105,8 @@ test('touch players get discoverable swipe controls with button and keyboard fal
     /function cancelGestureMotionForManualInput\(\).*clearActiveGesture\(\)/s,
   );
   assert.match(styles, /@media \(pointer:\s*coarse\)[^{]*\{.*\.touch-hint\s*\{[^}]*display:\s*block/s);
+  assert.doesNotMatch(gameSource, /pointerControls|clearPointerControls/);
+  assert.match(gameSource, /function setAccessibleControlsEnabled\(enabled\)/);
+  assert.match(gameSource, /activateAccessibleControl\(action\)[\s\S]*applySwipeAction\(action\)/);
   assert.match(gameSource, /clearAllControls\(\).*Player/s);
 });

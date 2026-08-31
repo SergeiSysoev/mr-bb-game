@@ -79,6 +79,9 @@
                 Grab all 10 duct sections. Mastic hits and missed decks cost one hard hat and 75 points.
               </p>
               <button id="overlay-action" type="button" disabled>LOADING…</button>
+              <button id="tap-controls-toggle" class="tap-controls-toggle" type="button" aria-pressed="false">
+                USE TAP CONTROLS
+              </button>
               <p class="keyboard-hint">Move: A / D or arrows · Jump: W / ↑ / Space · Crouch: S / ↓</p>
               <p class="touch-hint">
                 <span>Swipe → run · ← back · ↑ jump · ↓ crouch</span>
@@ -96,32 +99,6 @@
             <strong id="gesture-feedback-label">RUN</strong>
           </div>
 
-          <div class="touch-controls" aria-label="Touch controls" inert>
-            <div class="touch-pad">
-              <span class="touch-label" aria-hidden="true">MOVE</span>
-              <div class="touch-cluster">
-                <button class="touch-button" type="button" data-control="left" aria-label="Move left">←</button>
-                <button class="touch-button" type="button" data-control="right" aria-label="Move right">→</button>
-              </div>
-            </div>
-            <div class="touch-pad touch-pad-action">
-              <span class="touch-label" aria-hidden="true">ACTION</span>
-              <div class="touch-cluster touch-cluster-action">
-                <button
-                  class="touch-button touch-crouch"
-                  type="button"
-                  data-control="crouch"
-                  aria-label="Crouch"
-                >
-                  DUCK
-                </button>
-                <button class="touch-button touch-jump" type="button" data-control="jump" aria-label="Jump">
-                  JUMP
-                </button>
-              </div>
-            </div>
-          </div>
-
           <button
             id="stage-restart-button"
             class="stage-restart"
@@ -135,9 +112,26 @@
 
           <p id="gesture-instructions" class="sr-only">
             On touch screens, swipe right to run, left to go back, up to jump, or down to crouch and stop.
-            Swipe up twice for a high jump or right twice to sprint. The on-screen buttons and keyboard controls
-            remain available.
+            Swipe up twice for a high jump or right twice to sprint. Keyboard controls remain available on
+            computers. Optional tap controls can be enabled from the start screen.
           </p>
+
+          <div
+            id="accessible-controls"
+            class="accessible-controls"
+            role="group"
+            aria-label="Tap game controls"
+            hidden
+            inert
+          >
+            <button type="button" data-accessible-action="back" aria-label="Move back">← BACK</button>
+            <button type="button" data-accessible-action="run" aria-label="Run forward">→ RUN</button>
+            <button type="button" data-accessible-action="jump">↑ JUMP</button>
+            <button type="button" data-accessible-action="crouch" aria-label="Crouch and stop">↓ STOP</button>
+            <button type="button" data-accessible-action="sprint" aria-label="Sprint forward">» SPRINT</button>
+            <button type="button" data-accessible-action="high-jump">⇈ HIGH</button>
+            <button id="tap-controls-hide" type="button" aria-label="Hide tap controls">HIDE</button>
+          </div>
           <p id="game-announcement" class="sr-only" aria-live="polite"></p>
         </div>
 
@@ -162,7 +156,7 @@
         <div class="phone-turn" aria-hidden="true"><span></span></div>
         <p class="overlay-kicker">LANDSCAPE MODE</p>
         <h2 id="orientation-title">TURN YOUR PHONE</h2>
-        <p id="orientation-copy">Rotate it sideways to see the full jobsite and use both thumbs.</p>
+        <p id="orientation-copy">Rotate it sideways to see the full jobsite and swipe to move.</p>
         <button id="portrait-continue" type="button">PLAY IN PORTRAIT</button>
       </div>
     </aside>

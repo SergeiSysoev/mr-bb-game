@@ -11,7 +11,8 @@ Play: <https://sergeisysoev.github.io/mr-bb-game/>
 - Crouch: `S` or `Arrow Down`
 - iPhone swipe: right to auto-run, left to go back, up to jump, and down to crouch and stop
 - iPhone double swipe: up for a high jump or right for sprint
-- The on-screen left/right, **DUCK**, and **JUMP** buttons remain available as fallbacks
+- The iPhone playfield is gesture-only, without on-screen movement buttons
+- Optional 48px tap controls can be enabled from the start screen for accessibility
 - Restart: `R` or the **Restart run** button
 
 iOS keeps the physical Volume, Side, and Action buttons for system functions, so Safari cannot use them as real-time game controls. Adding the game to the Home Screen provides the cleanest landscape view.
