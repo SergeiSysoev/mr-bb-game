@@ -4,11 +4,15 @@ Both assets were generated as original artwork for Mr. BB. No Nintendo or Mario 
 
 ## `assets/mr-bb.png`
 
-Mode: `stylized-concept`
+Initial mode: built-in `stylized-concept`
+Current revision modes: built-in `precise-object-edit`, then built-in `background-extraction`
 
 - Generated: 2026-08-31 with OpenAI image generation through Codex
-- Project file SHA-256: `6ba2295570b489a2a85ae0ae2c268f4b61cf651c034e759ab3f20a4fb786ab40`
+- Revised: 2026-08-31 — clean-shaven face and brown hard hat
+- Project file SHA-256: `c767939fa0227067954da48bade70bac9123a54b352cff2388d6b76bace28d1f`
 - Project usage: included by the project owner under this repository's MIT license
+
+### Initial generation prompt
 
 ```text
 Use case: stylized-concept
@@ -21,13 +25,37 @@ Lighting/mood: bright, energetic, worksite-safe
 Constraints: genuinely transparent background with preserved alpha; original design; no text; no letters; no logos; no trademarks; no watermark; no Mario resemblance; no red cap; no moustache; no extra tools or props; crisp edges
 ```
 
+### Current revision prompts
+
+```text
+Use case: precise-object-edit
+Asset type: existing 2D browser-game character sprite, transparent cutout
+Input image: Image 1 is the edit target.
+Primary request: Change only two details on Mr. BB: (1) remove the entire beard and moustache so his face is completely clean-shaven, with no facial hair and no stubble; (2) recolor the hard hat from yellow to a clearly brown construction hard hat, using a rich medium chestnut-brown color with natural darker shadows and lighter brown highlights.
+Constraints: Preserve the exact same character identity, facial features, expression, running pose, proportions, side-facing direction, orange safety vest, navy shirt, gray pants, gloves, boots, illustration style, crop, edge quality, and genuine transparent background. Keep one character only. Do not modify anything except facial hair removal and hard-hat color. No text, no logo, no watermark.
+Avoid: beard, moustache, goatee, sideburn facial hair, stubble, yellow hard hat, orange hard hat, red hard hat, background, extra objects, extra characters, Mario resemblance.
+```
+
+```text
+Use case: background-extraction
+Asset type: 2D browser-game character sprite, transparent cutout
+Input image: Image 1 is the edit target.
+Primary request: Remove the entire gray-and-white checkerboard background and replace it with genuine transparent alpha.
+Constraints: Preserve the character exactly as shown, including his completely clean-shaven face with no beard, no moustache, and no stubble; preserve the brown hard hat, expression, pose, anatomy, clothing, colors, outlines, lighting, crop, and edge details. Output one isolated full-body character on a truly transparent background. Do not draw or simulate a checkerboard. No shadows outside the character, no text, no logo, no watermark.
+Avoid: any visible background color or pattern, checkerboard pattern, facial hair, yellow hard hat, altered pose, cropped body, extra objects.
+```
+
 ## `public/og.png`
 
-Mode: `ads-marketing`
+Initial mode: built-in `ads-marketing`
+Current revision mode: built-in `precise-object-edit`
 
 - Generated: 2026-08-31 with OpenAI image generation through Codex
-- Project file SHA-256: `16ee1d6edc6c6a69c2904f4a570379a7e3372df1ba3e0f13d851809779bfa8ef`
+- Revised: 2026-08-31 — clean-shaven face and brown hard hat
+- Project file SHA-256: `5e2a00bdca8fb1c9acfb045c1fe316bc99d1fe66cceed7a54c0cb9cd1b60072a`
 - Project usage: included by the project owner under this repository's MIT license
+
+### Initial generation prompt
 
 ```text
 Use case: ads-marketing
@@ -42,4 +70,16 @@ Color palette: Industrial navy and steel blue-gray, accented by safety orange an
 Text (verbatim): "MR. BB" and "DUCT RUN". Render "MR. BB" exactly once as the dominant title (characters: M R period, space, B B). Render "DUCT RUN" exactly once as the supporting copy beneath or near the title. Both strings must be large, crisp, correctly spelled, and fully legible.
 Constraints: Landscape social-card layout; original friendly HVAC worker; yellow hard hat; orange safety vest; both rectangular and spiral shiny ductwork visible; falling gray mastic bucket; bright-orange mastic visible; exact title and supporting copy only.
 Avoid: Any Mario resemblance, red plumber styling, Nintendo characters or assets, copyrighted game characters, extra people, extra words, misspellings, duplicate text, unrelated logos, brand marks, signatures, borders, or watermark.
+```
+
+### Current revision prompt
+
+```text
+Use case: precise-object-edit
+Asset type: existing 16:9 social-preview card for the browser game Mr. BB — Duct Run
+Input image: Image 1 is the edit target.
+Primary request: Change only two details on the running worker: (1) remove his entire beard and moustache so his face is completely clean-shaven, with no facial hair and no stubble; (2) recolor his yellow hard hat to a clearly brown construction hard hat, using a rich medium chestnut-brown color with natural darker shadows and lighter brown highlights.
+Text (verbatim): Preserve "MR. BB" exactly once and "DUCT RUN" exactly once, perfectly spelled and fully legible in the exact existing positions and styles.
+Constraints: Preserve the exact 16:9 composition, worker identity, expression, running pose, anatomy, clothing, orange safety vest, HVAC jobsite, shiny rectangular and spiral ductwork, falling gray mastic bucket, orange mastic splash, lighting, palette, title typography, supporting-copy typography, crop, and overall polished 2D game-illustration style. Do not change anything except facial hair removal and hard-hat color. No new text, logos, signatures, borders, or watermark.
+Avoid: beard, moustache, goatee, stubble, yellow hard hat, orange hard hat, red hard hat, misspelled text, duplicate text, extra people, changed background, changed bucket, changed ducts, Mario resemblance.
 ```

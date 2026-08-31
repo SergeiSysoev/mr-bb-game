@@ -1,11 +1,11 @@
 {
     "schema_version": 2,
-    "commit": "HEAD",
-    "indexed_at": "2026-08-31T18:16:55Z",
+    "commit": "25e89435427ca1580031059d58e2497cf1ebdd63",
+    "indexed_at": "2026-08-31T18:37:50Z",
     "project": "Users-assistant-mr-bb-game",
-    "nodes": 159,
-    "edges": 291,
+    "nodes": 162,
+    "edges": 294,
     "original_size": 1769472,
-    "compressed_size": 39152,
+    "compressed_size": 39524,
     "compression_level": 3
 }
