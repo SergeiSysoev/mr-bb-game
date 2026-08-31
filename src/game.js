@@ -39,6 +39,7 @@ const JUMP_SPEED = 0.285;
 const HIGH_JUMP_SPEED = 0.39;
 const GESTURE_CROUCH_FRAMES = 45;
 const GESTURE_EDGE_GUARD = 18;
+const LAUNCH_SPLASH_MIN_MS = 1800;
 
 const colors = {
   deep: rgb(0.035, 0.07, 0.09),
@@ -72,10 +73,8 @@ const restartButtons = document.querySelectorAll('[data-action="restart"]');
 const stageRestartButton = document.querySelector('#stage-restart-button');
 const announcement = document.querySelector('#game-announcement');
 const gameStage = document.querySelector('#game-stage');
-const accessibleControls = document.querySelector('#accessible-controls');
-const accessibleControlButtons = document.querySelectorAll('[data-accessible-action]');
-const tapControlsToggle = document.querySelector('#tap-controls-toggle');
-const tapControlsHide = document.querySelector('#tap-controls-hide');
+const launchSplash = document.querySelector('#launch-splash');
+const launchSplashImage = document.querySelector('#launch-splash-image');
 const gameFooter = document.querySelector('.game-footer');
 const page = document.querySelector('.page');
 const orientationGate = document.querySelector('#orientation-gate');
@@ -98,7 +97,10 @@ let activeGesture = null;
 let gestureFeedbackTimer;
 let gestureCrouchFrames = 0;
 let gestureIntent = { direction: 0, sprint: false, crouching: false };
-let accessibleControlsEnabled = false;
+let launchAssetReady = launchSplashImage.complete;
+let launchReadyAt = null;
+let launchTimer = 0;
+let initialRunStarted = false;
 
 const gestureJump = {
   normalQueued: false,
@@ -115,15 +117,6 @@ const gestureFeedbackContent = {
   jump: { icon: '↑', label: 'JUMP', power: false, persistent: false },
   'high-jump': { icon: '⇈', label: 'HIGH JUMP', power: true, persistent: false },
   crouch: { icon: '↓', label: 'CROUCH', power: false, persistent: false },
-};
-
-const accessibleActionAnnouncements = {
-  run: 'Running forward.',
-  sprint: 'Sprinting forward.',
-  back: 'Moving back.',
-  jump: 'Jump.',
-  'high-jump': 'High jump.',
-  crouch: 'Stopped and crouching.',
 };
 
 function formatScore(score) {
@@ -210,48 +203,94 @@ function clearGestureControls() {
   clearActiveGesture();
 }
 
-function syncAccessibleControls() {
-  const shouldShow =
-    accessibleControlsEnabled &&
-    gameState.status === 'playing' &&
-    overlay.classList.contains('is-hidden');
-
-  accessibleControls.hidden = !shouldShow;
-  accessibleControls.toggleAttribute('inert', !shouldShow);
-}
-
-function setAccessibleControlsEnabled(enabled) {
-  accessibleControlsEnabled = Boolean(enabled);
-  tapControlsToggle.setAttribute('aria-pressed', String(accessibleControlsEnabled));
-  tapControlsToggle.textContent = accessibleControlsEnabled ? 'TAP CONTROLS ON' : 'USE TAP CONTROLS';
-  syncAccessibleControls();
-  announce(accessibleControlsEnabled ? 'Tap controls enabled.' : 'Tap controls hidden. Swipe controls remain active.');
-}
-
 function showOverlay(title, copy, actionLabel) {
   clearAllControls();
   overlayTitle.textContent = title;
   overlayCopy.textContent = copy;
   overlayAction.textContent = actionLabel;
   overlay.removeAttribute('aria-hidden');
+  overlay.inert = false;
   gameFooter.inert = true;
   stageRestartButton.inert = true;
   overlay.classList.remove('is-hidden');
-  syncAccessibleControls();
   overlayAction.focus({ preventScroll: true });
 }
 
 function hideOverlay() {
   overlay.classList.add('is-hidden');
   overlay.setAttribute('aria-hidden', 'true');
+  overlay.inert = true;
   gameFooter.inert = false;
   stageRestartButton.inert = false;
-  syncAccessibleControls();
 }
 
 function clearAllControls() {
   clearGestureControls();
   player?.setCrouching(false);
+}
+
+function syncPageInteractivity(orientationBlocked) {
+  const pageBlocked = orientationBlocked || !initialRunStarted;
+  page.inert = pageBlocked;
+  if (pageBlocked) {
+    page.setAttribute('aria-hidden', 'true');
+  } else {
+    page.removeAttribute('aria-hidden');
+  }
+}
+
+function clearLaunchTimer() {
+  window.clearTimeout(launchTimer);
+  launchTimer = 0;
+}
+
+function pauseInitialLaunch() {
+  if (initialRunStarted) {
+    return;
+  }
+
+  clearLaunchTimer();
+  launchReadyAt = null;
+}
+
+function completeInitialLaunch() {
+  launchTimer = 0;
+  if (initialRunStarted || document.hidden || !orientationGate.hidden) {
+    pauseInitialLaunch();
+    return;
+  }
+
+  initialRunStarted = true;
+  syncPageInteractivity(false);
+  launchSplash.classList.add('is-hidden');
+  launchSplash.setAttribute('aria-hidden', 'true');
+  launchSplash.inert = true;
+  beginRun();
+}
+
+function scheduleInitialRun() {
+  if (
+    initialRunStarted ||
+    !engineReady ||
+    !launchAssetReady ||
+    document.hidden ||
+    !orientationGate.hidden
+  ) {
+    return;
+  }
+
+  launchReadyAt ??= performance.now();
+  clearLaunchTimer();
+  const elapsed = performance.now() - launchReadyAt;
+  launchTimer = window.setTimeout(
+    completeInitialLaunch,
+    Math.max(0, LAUNCH_SPLASH_MIN_MS - elapsed),
+  );
+}
+
+function markLaunchAssetReady() {
+  launchAssetReady = true;
+  scheduleInitialRun();
 }
 
 function getViewportDimensions() {
@@ -278,17 +317,20 @@ function syncOrientationGate(width, height, coarsePointer) {
 
   orientationGate.hidden = !shouldShowGate;
   orientationGate.setAttribute('aria-hidden', String(!shouldShowGate));
-  page.inert = shouldShowGate;
+  syncPageInteractivity(shouldShowGate);
 
   if (shouldShowGate) {
-    page.setAttribute('aria-hidden', 'true');
     clearAllControls();
+    pauseInitialLaunch();
     if (!gateWasVisible) {
       requestAnimationFrame(() => portraitContinue.focus({ preventScroll: true }));
     }
   } else {
-    page.removeAttribute('aria-hidden');
-    if (gateWasVisible && engineReady) {
+    if (gateWasVisible && orientationGate.contains(document.activeElement)) {
+      document.activeElement.blur();
+    }
+    scheduleInitialRun();
+    if (gateWasVisible && engineReady && initialRunStarted) {
       requestAnimationFrame(() => {
         const focusTarget = overlay.classList.contains('is-hidden') ? gameStage : overlayAction;
         focusTarget.focus({ preventScroll: true });
@@ -388,15 +430,6 @@ function applySwipeAction(action) {
   }
 
   showGestureFeedback(action);
-}
-
-function activateAccessibleControl(action) {
-  if (gameState.status !== 'playing' || !(action in accessibleActionAnnouncements)) {
-    return;
-  }
-
-  applySwipeAction(action);
-  announce(accessibleActionAnnouncements[action]);
 }
 
 function commitSwipe(direction, time) {
@@ -1036,15 +1069,11 @@ function gameInit() {
   setupWorld('intro');
 
   engineReady = true;
-  overlayAction.disabled = false;
-  overlayAction.textContent = 'START RUN';
-  if (orientationGate.hidden) {
-    overlayAction.focus({ preventScroll: true });
-  }
+  scheduleInitialRun();
 }
 
 function gameUpdate() {
-  if (LJS.keyWasPressed('KeyR')) {
+  if (initialRunStarted && LJS.keyWasPressed('KeyR')) {
     restartRun();
   }
 }
@@ -1065,21 +1094,16 @@ function gameRender() {
 
 function gameRenderPost() {}
 
+if (!launchAssetReady) {
+  launchSplashImage.addEventListener('load', markLaunchAssetReady, { once: true });
+  launchSplashImage.addEventListener('error', markLaunchAssetReady, { once: true });
+}
+
 gameStage.addEventListener('pointerdown', handleGestureStart);
 gameStage.addEventListener('pointermove', handleGestureMove, { passive: false });
 gameStage.addEventListener('pointerup', (event) => finishGesture(event, true));
 gameStage.addEventListener('pointercancel', (event) => finishGesture(event, false));
 gameStage.addEventListener('lostpointercapture', (event) => finishGesture(event, false));
-accessibleControlButtons.forEach((button) => {
-  button.addEventListener('click', () => activateAccessibleControl(button.dataset.accessibleAction));
-});
-tapControlsToggle.addEventListener('click', () => {
-  setAccessibleControlsEnabled(!accessibleControlsEnabled);
-});
-tapControlsHide.addEventListener('click', () => {
-  setAccessibleControlsEnabled(false);
-  gameStage.focus({ preventScroll: true });
-});
 overlayAction.addEventListener('click', beginRun);
 restartButtons.forEach((button) => button.addEventListener('click', restartRun));
 portraitContinue.addEventListener('click', () => {
@@ -1094,6 +1118,9 @@ screen.orientation?.addEventListener('change', scheduleViewportSync);
 document.addEventListener('visibilitychange', () => {
   if (document.hidden) {
     clearAllControls();
+    pauseInitialLaunch();
+  } else {
+    scheduleInitialRun();
   }
   syncViewportLayout();
 });

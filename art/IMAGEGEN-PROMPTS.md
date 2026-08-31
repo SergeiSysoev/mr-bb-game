@@ -111,15 +111,17 @@ Constraints: Preserve the character exactly as shown, including his completely c
 Avoid: any visible background color or pattern, checkerboard pattern, facial hair, yellow hard hat, altered pose, cropped body, extra objects.
 ```
 
-## `public/og.png`
+## `public/og.png` and `assets/mr-bb-splash.png`
 
 Initial mode: built-in `ads-marketing`
 Current revision mode: built-in `precise-object-edit`
 
 - Generated: 2026-08-31 with OpenAI image generation through Codex
 - Revised: 2026-08-31 — bald head, light eyebrows, subtle light stubble, and brown hard hat
-- Project file: resized to the declared 1200×675 social-card dimensions
-- Project file SHA-256: `c9030ddbf586f88d75c1276d21b4f00e0465d42723465a7c88da2b3f2b2d04db`
+- Revised again: 2026-08-31 — removed the airborne mastic bucket and orange liquid; added flying screws and tools for the buttonless launch splash
+- Final title revision: 2026-08-31 — restored the clearly visible space in the exact title `MR. BB`
+- Project files: the same generated edit resized to 1200×675 for both the launch splash and social card
+- Project file SHA-256: `c16f5d5081fe3bb944dfec6072f1d9cc6f944eee4aab7e0e94f1a51948572d97`
 - Project usage: included by the project owner under this repository's MIT license
 
 ### Initial generation prompt
@@ -163,4 +165,34 @@ Subject invariants: Preserve the exact worker identity, friendly expression, eye
 Scene invariants: Preserve the exact 16:9 composition, HVAC construction site, shiny rectangular and spiral ductwork, falling mastic bucket, orange mastic splash, background, camera angle, crop, color palette, title typography, and supporting-copy typography.
 Constraints: Change only hair, eyebrow color, and subtle light stubble. Bald scalp must be visible wherever hair was previously visible. Light stubble is not a beard, goatee, or moustache. No new text, logo, signature, border, or watermark.
 Avoid: dark head hair, dark hairline, dark eyebrows, thick beard, full beard, goatee, moustache, dark facial hair, misspelled or changed text, duplicate text, changed construction scene, changed bucket or ducts, changed outfit, changed hard-hat color, extra people, Mario or Nintendo resemblance.
+```
+
+### Bucket-to-tools launch-splash revision prompt
+
+```text
+Use case: precise-object-edit
+Asset type: landscape launch splash and social card for the original web game "Mr. BB — Duct Run"
+Image 1: edit target.
+
+Primary edit: Remove the airborne metal bucket on the right side and remove every trace of orange mastic, orange liquid, orange splash, and orange droplets around it. Replace only that airborne bucket-and-liquid area with a lively cluster of loose HVAC construction tools and hardware flying through the air as Mr. BB rushes past: several clearly recognizable silver screws, a compact yellow-and-black tape measure, a screwdriver, small pliers, and one work glove. Arrange the objects with energetic motion trails as if they spilled from a tool pouch, but keep them safely behind and beside him, not striking him.
+
+Character invariants: Preserve Mr. BB's exact identity, face, pose, body, clothing, proportions, expression, and lighting. He is bald under a brown hard hat, with light blond eyebrows and subtle light-blond stubble, no moustache and no full beard.
+
+Scene invariants: Preserve the HVAC construction site, all ducts, perspective, lighting, cinematic 3D cartoon style, framing, colors, and composition. Preserve the existing title text exactly and verbatim: "MR. BB" and "DUCT RUN". Do not change, misspell, duplicate, add, or remove any letters. Keep every area outside the former bucket-and-liquid region unchanged.
+
+Constraints: no bucket anywhere; no orange liquid, mastic, paint, splash, or droplets; no dangerous impact; no extra people; no logos; no trademarks; no watermark.
+```
+
+### Exact title-spacing correction prompt
+
+```text
+Use case: precise-object-edit
+Asset type: landscape launch splash and social card for the original web game "Mr. BB — Duct Run"
+Image 1: exact edit target.
+
+Primary edit: Change only the spacing in the large yellow title at upper left. Insert one clearly visible normal word space between the period after "MR" and the first "B" so the title reads exactly and unmistakably "MR. BB", not "MR.BB". Preserve the exact letters, period, 3D lettering style, size, colors, shadows, alignment, and all other spacing. Keep "DUCT RUN" exactly unchanged.
+
+Absolute invariants: Preserve every pixel outside that small title-spacing region as closely as possible. Keep Mr. BB's exact identity, bald scalp, light blond eyebrows, subtle light-blond stubble, clean upper lip with no moustache, no full beard, brown hard hat, face, pose, clothes, lighting, and proportions. Keep the screws, tape measure, screwdriver, pliers, glove, motion trails, HVAC site, ducts, background, perspective, framing, colors, and 16:9 composition unchanged.
+
+Constraints: exact visible text "MR. BB" and "DUCT RUN"; no bucket; no orange mastic, liquid, paint, splash, or droplets; no new objects; no logos; no watermark.
 ```

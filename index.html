@@ -37,7 +37,19 @@
     <link rel="stylesheet" href="/styles.css" />
   </head>
   <body>
-    <main class="page">
+    <div id="launch-splash" class="launch-splash" aria-label="Mr. BB Duct Run launch artwork">
+      <img
+        id="launch-splash-image"
+        src="/assets/mr-bb-splash.png"
+        alt="Bald Mr. BB in a brown hard hat rushing through an HVAC jobsite while screws and tools scatter behind him"
+        width="1200"
+        height="675"
+        decoding="async"
+        fetchpriority="high"
+      />
+    </div>
+
+    <main class="page" aria-hidden="true" inert>
       <header class="brand-bar" aria-label="Game title">
         <div>
           <p class="eyebrow">HVAC PLATFORMER · LEVEL 01</p>
@@ -65,11 +77,13 @@
 
           <div
             id="game-overlay"
-            class="game-overlay"
+            class="game-overlay is-hidden"
             role="dialog"
             aria-modal="true"
             aria-labelledby="overlay-title"
             aria-describedby="overlay-copy"
+            aria-hidden="true"
+            inert
           >
             <div class="overlay-card">
               <p class="overlay-kicker">HVAC JOBSITE · FLOOR 01</p>
@@ -77,20 +91,9 @@
                 src="/assets/mr-bb-v2.png"
                 alt="Bald cartoon Mr. BB with light eyebrows, light stubble, and a brown hard hat"
               />
-              <h2 id="overlay-title">READY, MR. BB?</h2>
-              <p id="overlay-copy">
-                Grab all 10 HVAC parts: rectangular and round ducts, elbows, and screw packs. Falling debris
-                and missed decks cost one hard hat and 75 points.
-              </p>
-              <button id="overlay-action" type="button" disabled>LOADING…</button>
-              <button id="tap-controls-toggle" class="tap-controls-toggle" type="button" aria-pressed="false">
-                USE TAP CONTROLS
-              </button>
-              <p class="keyboard-hint">Move: A / D or arrows · Jump: W / ↑ / Space · Crouch: S / ↓</p>
-              <p class="touch-hint">
-                <span>Swipe → run · ← back · ↑ jump · ↓ crouch</span>
-                <span>Double swipe ↑ high jump · → sprint</span>
-              </p>
+              <h2 id="overlay-title">RUN COMPLETE</h2>
+              <p id="overlay-copy">Mr. BB is ready for another run.</p>
+              <button id="overlay-action" type="button">RUN AGAIN</button>
             </div>
           </div>
 
@@ -117,25 +120,8 @@
           <p id="gesture-instructions" class="sr-only">
             On touch screens, swipe right to run, left to go back, up to jump, or down to crouch and stop.
             Swipe up twice for a high jump or right twice to sprint. Keyboard controls remain available on
-            computers. Optional tap controls can be enabled from the start screen.
+            computers.
           </p>
-
-          <div
-            id="accessible-controls"
-            class="accessible-controls"
-            role="group"
-            aria-label="Tap game controls"
-            hidden
-            inert
-          >
-            <button type="button" data-accessible-action="back" aria-label="Move back">← BACK</button>
-            <button type="button" data-accessible-action="run" aria-label="Run forward">→ RUN</button>
-            <button type="button" data-accessible-action="jump">↑ JUMP</button>
-            <button type="button" data-accessible-action="crouch" aria-label="Crouch and stop">↓ STOP</button>
-            <button type="button" data-accessible-action="sprint" aria-label="Sprint forward">» SPRINT</button>
-            <button type="button" data-accessible-action="high-jump">⇈ HIGH</button>
-            <button id="tap-controls-hide" type="button" aria-label="Hide tap controls">HIDE</button>
-          </div>
           <p id="game-announcement" class="sr-only" aria-live="polite"></p>
         </div>
 

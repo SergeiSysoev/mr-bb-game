@@ -54,17 +54,24 @@ test('the larger cartoon Mr. BB asset keeps transparent sprite dimensions and a 
   );
 });
 
-test('the social preview keeps the approved bald Mr. BB identity artwork', async () => {
-  const socialCard = await readProjectAsset('public/og.png');
+test('the launch splash and social preview keep the approved tool-scatter artwork', async () => {
+  const [markup, launchSplash, socialCard] = await Promise.all([
+    readProjectFile('index.html'),
+    readProjectAsset('assets/mr-bb-splash.png'),
+    readProjectAsset('public/og.png'),
+  ]);
 
-  assert.equal(socialCard.subarray(1, 4).toString('ascii'), 'PNG');
-  assert.equal(socialCard.readUInt32BE(16), 1200);
-  assert.equal(socialCard.readUInt32BE(20), 675);
-  assert.equal(
-    createHash('sha256').update(socialCard).digest('hex'),
-    'c9030ddbf586f88d75c1276d21b4f00e0465d42723465a7c88da2b3f2b2d04db',
-    'social preview must match the approved bald, light-eyebrow, light-stubble artwork',
-  );
+  assert.match(markup, /src="\/assets\/mr-bb-splash\.png"/);
+  for (const artwork of [launchSplash, socialCard]) {
+    assert.equal(artwork.subarray(1, 4).toString('ascii'), 'PNG');
+    assert.equal(artwork.readUInt32BE(16), 1200);
+    assert.equal(artwork.readUInt32BE(20), 675);
+    assert.equal(
+      createHash('sha256').update(artwork).digest('hex'),
+      'c16f5d5081fe3bb944dfec6072f1d9cc6f944eee4aab7e0e94f1a51948572d97',
+      'launch artwork must match the approved bald Mr. BB with flying screws and tools',
+    );
+  }
 });
 
 test('level one presents varied parts and falling construction hazards', async () => {
@@ -94,6 +101,7 @@ test('the blocking game overlay exposes dialog semantics', async () => {
   assert.match(markup, /role="dialog"/);
   assert.match(markup, /aria-modal="true"/);
   assert.match(markup, /aria-labelledby="overlay-title"/);
+  assert.match(markup, /id="game-overlay"[\s\S]*class="game-overlay is-hidden"[\s\S]*aria-hidden="true"[\s\S]*inert/);
 });
 
 test('landscape iPhones get a canvas matching their wide viewport', () => {
@@ -135,24 +143,32 @@ test('the mobile release contract includes landscape and safe-area support', asy
   assert.equal(manifest.icons[0].src, './mr-bb-icon.svg');
 });
 
-test('touch players get a gesture-only default with opt-in accessible tap controls', async () => {
+test('the launch is buttonless and touch play is swipe-only', async () => {
   const [markup, styles, gameSource] = await Promise.all([
     readProjectFile('index.html'),
     readProjectFile('styles.css'),
     readProjectFile('src/game.js'),
   ]);
+  const splashMarkup = markup.match(/<div id="launch-splash"[\s\S]*?<\/div>/)?.[0];
 
-  assert.match(markup, /Swipe → run · ← back · ↑ jump · ↓ crouch/);
-  assert.match(markup, /Double swipe ↑ high jump · → sprint/);
+  assert.ok(splashMarkup, 'launch splash markup must exist');
+  assert.match(splashMarkup, /id="launch-splash-image"/);
+  assert.doesNotMatch(splashMarkup, /<button/);
+  assert.match(markup, /<main class="page" aria-hidden="true" inert>/);
+  assert.doesNotMatch(markup, /READY, MR\. BB\?|START RUN|USE TAP CONTROLS/);
+  assert.match(markup, /swipe right to run, left to go back, up to jump, or down to crouch/i);
+  assert.match(markup, /Swipe up twice for a high jump or right twice to sprint/);
   assert.doesNotMatch(markup, /class="touch-controls"/);
   assert.doesNotMatch(markup, /data-control=/);
-  assert.match(markup, /id="tap-controls-toggle"[\s\S]*aria-pressed="false"/);
-  assert.match(markup, /id="accessible-controls"[\s\S]*hidden[\s\S]*inert/);
-  assert.match(markup, /data-accessible-action="run"/);
-  assert.match(markup, /data-accessible-action="high-jump"/);
+  assert.doesNotMatch(markup, /tap-controls-toggle|accessible-controls|data-accessible-action/);
+  assert.doesNotMatch(styles, /tap-controls-toggle|accessible-controls|keyboard-hint|touch-hint/);
+  assert.doesNotMatch(
+    gameSource,
+    /setAccessibleControlsEnabled|activateAccessibleControl|accessibleControlsEnabled|tapControlsToggle/,
+  );
   assert.match(styles, /#game-stage[^{]*\{[^}]*touch-action:\s*none/s);
-  assert.match(styles, /\.accessible-controls\[hidden\][^{]*\{[^}]*display:\s*none/s);
-  assert.match(styles, /\.accessible-controls button[^{]*\{[^}]*min-height:\s*48px/s);
+  assert.match(styles, /\.launch-splash[^{]*\{[^}]*position:\s*fixed/s);
+  assert.match(styles, /\.launch-splash img[^{]*\{[^}]*object-fit:\s*contain/s);
   assert.match(gameSource, /pointerType === 'touch'/);
   assert.match(gameSource, /addEventListener\('pointerdown', handleGestureStart\)/);
   assert.match(gameSource, /LJS\.keyIsDown\('ArrowDown'\)/);
@@ -160,9 +176,21 @@ test('touch players get a gesture-only default with opt-in accessible tap contro
     gameSource,
     /function cancelGestureMotionForManualInput\(\).*clearActiveGesture\(\)/s,
   );
-  assert.match(styles, /@media \(pointer:\s*coarse\)[^{]*\{.*\.touch-hint\s*\{[^}]*display:\s*block/s);
   assert.doesNotMatch(gameSource, /pointerControls|clearPointerControls/);
-  assert.match(gameSource, /function setAccessibleControlsEnabled\(enabled\)/);
-  assert.match(gameSource, /activateAccessibleControl\(action\)[\s\S]*applySwipeAction\(action\)/);
   assert.match(gameSource, /clearAllControls\(\).*Player/s);
+  assert.match(gameSource, /const LAUNCH_SPLASH_MIN_MS = 1800/);
+  assert.match(
+    gameSource,
+    /function syncPageInteractivity\(orientationBlocked\)[\s\S]*orientationBlocked \|\| !initialRunStarted/,
+  );
+  assert.match(
+    gameSource,
+    /function completeInitialLaunch\(\)[\s\S]*syncPageInteractivity\(false\)[\s\S]*launchSplash\.classList\.add\('is-hidden'\)[\s\S]*beginRun\(\)/,
+  );
+  const readyIndex = gameSource.indexOf('engineReady = true;');
+  const launchIndex = gameSource.indexOf('scheduleInitialRun();', readyIndex);
+  assert.ok(
+    readyIndex >= 0 && launchIndex > readyIndex,
+    'auto-start must be scheduled only after the engine is ready',
+  );
 });
