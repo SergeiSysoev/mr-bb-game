@@ -6,6 +6,11 @@ import {
   takeFallHit,
   takeMasticHit,
 } from './game-logic.js';
+import {
+  getGameCanvasSize,
+  isPhoneLandscapeViewport,
+  isPhonePortraitViewport,
+} from './viewport.js';
 
 const { vec2, rgb } = LJS;
 
@@ -39,17 +44,24 @@ const overlay = document.querySelector('#game-overlay');
 const overlayTitle = document.querySelector('#overlay-title');
 const overlayCopy = document.querySelector('#overlay-copy');
 const overlayAction = document.querySelector('#overlay-action');
-const restartButton = document.querySelector('#restart-button');
+const restartButtons = document.querySelectorAll('[data-action="restart"]');
+const stageRestartButton = document.querySelector('#stage-restart-button');
 const announcement = document.querySelector('#game-announcement');
 const gameStage = document.querySelector('#game-stage');
 const touchControls = document.querySelector('.touch-controls');
 const gameFooter = document.querySelector('.game-footer');
+const page = document.querySelector('.page');
+const orientationGate = document.querySelector('#orientation-gate');
+const portraitContinue = document.querySelector('#portrait-continue');
 
 let gameState = createGameState(TOTAL_DUCTS);
 let player;
 let heroTile;
 let engineReady = false;
 let announcementTimer;
+let portraitOverride = false;
+let viewportSyncFrame = 0;
+let lastCanvasSize = '';
 
 const pointerControls = {
   left: new Set(),
@@ -87,6 +99,7 @@ function showOverlay(title, copy, actionLabel) {
   overlay.removeAttribute('aria-hidden');
   touchControls.inert = true;
   gameFooter.inert = true;
+  stageRestartButton.inert = true;
   overlay.classList.remove('is-hidden');
   overlayAction.focus({ preventScroll: true });
 }
@@ -96,6 +109,7 @@ function hideOverlay() {
   overlay.setAttribute('aria-hidden', 'true');
   touchControls.inert = false;
   gameFooter.inert = false;
+  stageRestartButton.inert = false;
 }
 
 function clearPointerControls() {
@@ -104,6 +118,70 @@ function clearPointerControls() {
   }
   pointerControls.jumpQueued = false;
   document.querySelectorAll('.touch-button').forEach((button) => button.classList.remove('is-pressed'));
+}
+
+function getViewportDimensions() {
+  const viewport = window.visualViewport;
+  return {
+    width: viewport?.width || window.innerWidth,
+    height: viewport?.height || window.innerHeight,
+  };
+}
+
+function hasCoarsePointer() {
+  return window.matchMedia('(pointer: coarse)').matches;
+}
+
+function syncOrientationGate(width, height, coarsePointer) {
+  const isPhoneLandscape = isPhoneLandscapeViewport(width, height, coarsePointer);
+  if (isPhoneLandscape) {
+    portraitOverride = false;
+  }
+
+  const shouldShowGate =
+    isPhonePortraitViewport(width, height, coarsePointer) && !portraitOverride;
+  const gateWasVisible = !orientationGate.hidden;
+
+  orientationGate.hidden = !shouldShowGate;
+  orientationGate.setAttribute('aria-hidden', String(!shouldShowGate));
+  page.inert = shouldShowGate;
+
+  if (shouldShowGate) {
+    page.setAttribute('aria-hidden', 'true');
+    clearPointerControls();
+    if (!gateWasVisible) {
+      requestAnimationFrame(() => portraitContinue.focus({ preventScroll: true }));
+    }
+  } else {
+    page.removeAttribute('aria-hidden');
+    if (gateWasVisible && engineReady) {
+      requestAnimationFrame(() => {
+        const focusTarget = overlay.classList.contains('is-hidden') ? gameStage : overlayAction;
+        focusTarget.focus({ preventScroll: true });
+      });
+    }
+  }
+
+  LJS.setPaused(document.hidden || shouldShowGate);
+}
+
+function syncViewportLayout() {
+  const { width, height } = getViewportDimensions();
+  const coarsePointer = hasCoarsePointer();
+  const canvasSize = getGameCanvasSize(width, height, coarsePointer);
+  const nextCanvasSize = `${canvasSize.width}x${canvasSize.height}`;
+
+  if (nextCanvasSize !== lastCanvasSize) {
+    lastCanvasSize = nextCanvasSize;
+    LJS.setCanvasFixedSize(vec2(canvasSize.width, canvasSize.height));
+  }
+
+  syncOrientationGate(width, height, coarsePointer);
+}
+
+function scheduleViewportSync() {
+  cancelAnimationFrame(viewportSyncFrame);
+  viewportSyncFrame = requestAnimationFrame(syncViewportLayout);
 }
 
 function controlIsDown(name) {
@@ -509,7 +587,9 @@ function gameInit() {
   engineReady = true;
   overlayAction.disabled = false;
   overlayAction.textContent = 'START RUN';
-  overlayAction.focus({ preventScroll: true });
+  if (orientationGate.hidden) {
+    overlayAction.focus({ preventScroll: true });
+  }
 }
 
 function gameUpdate() {
@@ -577,12 +657,21 @@ document.querySelectorAll('[data-control]').forEach((button) => {
 });
 
 overlayAction.addEventListener('click', beginRun);
-restartButton.addEventListener('click', restartRun);
+restartButtons.forEach((button) => button.addEventListener('click', restartRun));
+portraitContinue.addEventListener('click', () => {
+  portraitOverride = true;
+  syncViewportLayout();
+});
 window.addEventListener('blur', clearPointerControls);
+window.addEventListener('resize', scheduleViewportSync);
+window.addEventListener('orientationchange', scheduleViewportSync);
+window.visualViewport?.addEventListener('resize', scheduleViewportSync);
+screen.orientation?.addEventListener('change', scheduleViewportSync);
 document.addEventListener('visibilitychange', () => {
   if (document.hidden) {
     clearPointerControls();
   }
+  syncViewportLayout();
 });
 document.addEventListener('keydown', (event) => {
   if (
@@ -597,8 +686,8 @@ document.addEventListener('keydown', (event) => {
 LJS.setGLEnable(false);
 LJS.setShowSplashScreen(false);
 LJS.setCanvasPixelated(false);
-LJS.setCanvasFixedSize(vec2(960, 720));
 LJS.setInputPreventDefault(false);
 LJS.setTouchInputEnable(false);
 LJS.setTouchGamepadEnable(false);
+syncViewportLayout();
 LJS.engineInit(gameInit, gameUpdate, gameUpdatePost, gameRender, gameRenderPost, [HERO_SOURCE], gameStage);

@@ -8,8 +8,10 @@ Play: <https://sergeisysoev.github.io/mr-bb-game/>
 
 - Move: `A` / `D` or arrow keys
 - Jump: `W`, `Arrow Up`, or `Space`
-- Touch: on-screen left, right, and jump buttons
+- iPhone: rotate to landscape, then use the on-screen left/right pad and **JUMP** button with both thumbs
 - Restart: `R` or the **Restart run** button
+
+iOS keeps the physical Volume, Side, and Action buttons for system functions, so Safari cannot use them as real-time game controls. Adding the game to the Home Screen provides the cleanest landscape view.
 
 ## Local development
 

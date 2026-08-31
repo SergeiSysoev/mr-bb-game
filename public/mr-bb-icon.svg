@@ -1,0 +1,21 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-labelledby="title">
+  <title id="title">Mr. BB hard hat icon</title>
+  <rect width="512" height="512" rx="112" fill="#091016" />
+  <circle cx="256" cy="256" r="190" fill="#172832" />
+  <path
+    d="M125 246c4-87 56-145 131-145s127 58 131 145h29c15 0 27 12 27 27s-12 27-27 27H96c-15 0-27-12-27-27s12-27 27-27h29Z"
+    fill="#8b5e3c"
+  />
+  <path d="M206 116v130h100V116c-15-10-32-15-50-15s-35 5-50 15Z" fill="#a8744d" />
+  <path d="M117 246h278" fill="none" stroke="#d0a17d" stroke-width="18" stroke-linecap="round" />
+  <text
+    x="256"
+    y="405"
+    fill="#ffb000"
+    font-family="Arial Black, Arial, sans-serif"
+    font-size="116"
+    font-weight="900"
+    letter-spacing="-8"
+    text-anchor="middle"
+  >BB</text>
+</svg>

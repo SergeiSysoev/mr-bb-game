@@ -1,6 +1,11 @@
 import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
 import test from 'node:test';
+import {
+  getGameCanvasSize,
+  isPhoneLandscapeViewport,
+  isPhonePortraitViewport,
+} from '../src/viewport.js';
 
 const projectFile = (path) => new URL(`../${path}`, import.meta.url);
 const readProjectFile = (path) => readFile(projectFile(path), 'utf8');
@@ -33,4 +38,43 @@ test('the blocking game overlay exposes dialog semantics', async () => {
   assert.match(markup, /role="dialog"/);
   assert.match(markup, /aria-modal="true"/);
   assert.match(markup, /aria-labelledby="overlay-title"/);
+});
+
+test('landscape iPhones get a canvas matching their wide viewport', () => {
+  assert.equal(isPhoneLandscapeViewport(852, 393, true), true);
+  assert.deepEqual(getGameCanvasSize(852, 393, true), { width: 1560, height: 720 });
+  assert.deepEqual(getGameCanvasSize(932, 430, true), { width: 1560, height: 720 });
+  assert.deepEqual(getGameCanvasSize(667, 375, true), { width: 1281, height: 720 });
+});
+
+test('desktop and portrait layouts retain the original 4:3 canvas', () => {
+  assert.deepEqual(getGameCanvasSize(852, 393, false), { width: 960, height: 720 });
+  assert.deepEqual(getGameCanvasSize(1440, 900, false), { width: 960, height: 720 });
+  assert.deepEqual(getGameCanvasSize(820, 1180, true), { width: 960, height: 720 });
+  assert.equal(isPhonePortraitViewport(390, 844, true), true);
+});
+
+test('the mobile release contract includes landscape and safe-area support', async () => {
+  const [markup, styles, gameSource, manifestSource] = await Promise.all([
+    readProjectFile('index.html'),
+    readProjectFile('styles.css'),
+    readProjectFile('src/game.js'),
+    readProjectFile('public/manifest.webmanifest'),
+  ]);
+  const manifest = JSON.parse(manifestSource);
+
+  assert.match(markup, /viewport-fit=cover/);
+  assert.match(markup, /rel="manifest"/);
+  assert.match(markup, /id="orientation-gate"/);
+  assert.match(markup, /id="portrait-continue"/);
+  assert.match(styles, /orientation:\s*landscape/);
+  assert.match(styles, /safe-area-inset-left/);
+  assert.match(styles, /safe-area-inset-right/);
+  assert.match(styles, /safe-area-inset-bottom/);
+  assert.match(gameSource, /isPhonePortraitViewport/);
+  assert.match(gameSource, /visualViewport/);
+  assert.equal(manifest.orientation, 'landscape');
+  assert.equal(manifest.display, 'standalone');
+  assert.deepEqual(manifest.display_override, ['fullscreen', 'standalone']);
+  assert.equal(manifest.icons[0].src, './mr-bb-icon.svg');
 });

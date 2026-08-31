@@ -1,0 +1,22 @@
+{
+  "id": "./",
+  "name": "Mr. BB — Duct Run",
+  "short_name": "Mr. BB",
+  "description": "Run the HVAC jobsite, collect ductwork, and dodge falling mastic buckets.",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "display_override": ["fullscreen", "standalone"],
+  "orientation": "landscape",
+  "background_color": "#091016",
+  "theme_color": "#101820",
+  "categories": ["games"],
+  "icons": [
+    {
+      "src": "./mr-bb-icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}
