@@ -9,6 +9,7 @@ import {
 
 const projectFile = (path) => new URL(`../${path}`, import.meta.url);
 const readProjectFile = (path) => readFile(projectFile(path), 'utf8');
+const readProjectAsset = (path) => readFile(projectFile(path));
 
 test('LittleJS global input interception stays disabled', async () => {
   const gameSource = await readProjectFile('src/game.js');
@@ -28,8 +29,43 @@ test('the published build retains the LittleJS MIT notice', async () => {
   assert.match(publicLicense, /Permission is hereby granted/);
 });
 
+test('the larger cartoon Mr. BB asset keeps transparent sprite dimensions and a compact hitbox', async () => {
+  const [markup, gameSource, hero] = await Promise.all([
+    readProjectFile('index.html'),
+    readProjectFile('src/game.js'),
+    readProjectAsset('assets/mr-bb-v2.png'),
+  ]);
+
+  assert.match(markup, /assets\/mr-bb-v2\.png/);
+  assert.match(gameSource, /HERO_SOURCE.*assets\/mr-bb-v2\.png/);
+  assert.match(gameSource, /standingSize = vec2\(0\.68, 1\.03\)/);
+  assert.match(gameSource, /standingDrawSize = vec2\(1\.92, 1\.75\)/);
+  assert.match(gameSource, /heroTile = LJS\.tile\(vec2\(0\), vec2\(488, 446\)/);
+  assert.equal(hero.subarray(1, 4).toString('ascii'), 'PNG');
+  assert.equal(hero.readUInt32BE(16), 488);
+  assert.equal(hero.readUInt32BE(20), 446);
+  assert.equal(hero[25], 6, 'hero PNG must retain an RGBA alpha channel');
+});
+
+test('level one presents varied parts and falling construction hazards', async () => {
+  const [markup, gameSource, levelData] = await Promise.all([
+    readProjectFile('index.html'),
+    readProjectFile('src/game.js'),
+    readProjectFile('src/level-data.js'),
+  ]);
+
+  assert.match(markup, /id="parts-value">0 \/ 10/);
+  assert.doesNotMatch(markup, /id="duct-value"/);
+  assert.match(gameSource, /class JobPart extends LJS\.EngineObject/);
+  assert.match(gameSource, /class FallingHazard extends LJS\.EngineObject/);
+  assert.match(levelData, /rectangular[\s\S]*round[\s\S]*elbow[\s\S]*screws/);
+  assert.match(levelData, /mastic[\s\S]*hammer[\s\S]*lumber/);
+});
+
 test('GitHub Pages keeps the repository path prefix', async () => {
+  const markup = await readProjectFile('index.html');
   const viteConfig = await readProjectFile('vite.config.js');
+  assert.match(markup, /rel="manifest" href="%BASE_URL%manifest\.webmanifest"/);
   assert.match(viteConfig, /GITHUB_PAGES.*\/mr-bb-game\//s);
 });
 

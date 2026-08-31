@@ -2,7 +2,7 @@
   "id": "./",
   "name": "Mr. BB — Duct Run",
   "short_name": "Mr. BB",
-  "description": "Run the HVAC jobsite, collect ductwork, and dodge falling mastic buckets.",
+  "description": "Run the HVAC jobsite, collect ducts, elbows, and screws, and dodge falling buckets, hammers, and lumber.",
   "start_url": "./",
   "scope": "./",
   "display": "standalone",

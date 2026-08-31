@@ -1,6 +1,6 @@
 # Mr. BB — Duct Run
 
-A small browser platformer set on an HVAC construction site. Run, jump, collect ten duct sections, and dodge falling mastic buckets.
+A small browser platformer set on an HVAC construction site. Run and jump with a large original cartoon Mr. BB, collect ten varied HVAC parts, and dodge falling mastic buckets, hammers, and 2×4 lumber.
 
 Play: <https://sergeisysoev.github.io/mr-bb-game/>
 

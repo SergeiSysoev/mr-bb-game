@@ -1,11 +1,17 @@
 import * as LJS from '../vendor/littlejs.esm.min.js';
 import {
-  collectDuct,
+  collectPart,
   createGameState,
   startRun,
   takeFallHit,
-  takeMasticHit,
+  takeHazardHit as applyHazardHit,
 } from './game-logic.js';
+import {
+  HAZARD_DEFINITIONS,
+  HAZARD_LAYOUT,
+  PART_DEFINITIONS,
+  PART_LAYOUT,
+} from './level-data.js';
 import {
   getGameCanvasSize,
   isPhoneLandscapeViewport,
@@ -21,10 +27,10 @@ import {
 
 const { vec2, rgb } = LJS;
 
-const TOTAL_DUCTS = 10;
+const TOTAL_PARTS = PART_LAYOUT.length;
 const LEVEL_WIDTH = 54;
 const PLAYER_START = vec2(2.2, 2.1);
-const HERO_SOURCE = new URL('../assets/mr-bb.png', import.meta.url).href;
+const HERO_SOURCE = new URL('../assets/mr-bb-v2.png', import.meta.url).href;
 const GAMEPLAY_SCROLL_KEYS = new Set(['ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown', 'Space']);
 const MANUAL_MOVEMENT_KEYS = new Set(['ArrowLeft', 'ArrowRight', 'ArrowDown', 'KeyA', 'KeyD', 'KeyS']);
 const RUN_SPEED = 0.19;
@@ -49,10 +55,14 @@ const colors = {
   orange: rgb(0.98, 0.28, 0.05),
   bucket: rgb(0.20, 0.23, 0.24),
   bucketEdge: rgb(0.72, 0.76, 0.77),
+  pickupGlow: rgb(1, 0.66, 0.02, 0.16),
+  wood: rgb(0.55, 0.29, 0.10),
+  woodLight: rgb(0.82, 0.52, 0.22),
+  woodDark: rgb(0.26, 0.13, 0.055),
 };
 
 const scoreValue = document.querySelector('#score-value');
-const ductValue = document.querySelector('#duct-value');
+const partsValue = document.querySelector('#parts-value');
 const livesValue = document.querySelector('#lives-value');
 const overlay = document.querySelector('#game-overlay');
 const overlayTitle = document.querySelector('#overlay-title');
@@ -76,7 +86,7 @@ const gestureFeedback = document.querySelector('#gesture-feedback');
 const gestureFeedbackIcon = document.querySelector('#gesture-feedback-icon');
 const gestureFeedbackLabel = document.querySelector('#gesture-feedback-label');
 
-let gameState = createGameState(TOTAL_DUCTS);
+let gameState = createGameState(TOTAL_PARTS);
 let player;
 let heroTile;
 let engineReady = false;
@@ -122,7 +132,7 @@ function formatScore(score) {
 
 function updateHud() {
   scoreValue.textContent = formatScore(gameState.score);
-  ductValue.textContent = `${gameState.collectedDucts} / ${gameState.totalDucts}`;
+  partsValue.textContent = `${gameState.collectedParts} / ${gameState.totalParts}`;
   livesValue.textContent = gameState.lives ? Array(gameState.lives).fill('●').join(' ') : '—';
   livesValue.setAttribute('aria-label', `${gameState.lives} hard hats`);
 }
@@ -535,9 +545,20 @@ class Platform extends LJS.EngineObject {
   }
 }
 
-class DuctSection extends LJS.EngineObject {
-  constructor(pos) {
-    super(pos, vec2(0.85, 0.72));
+function inventorySummary(inventory) {
+  return `${inventory.rectangular} rectangular, ${inventory.round} round, ${inventory.elbow} elbows, and ${inventory.screws} screw packs`;
+}
+
+class JobPart extends LJS.EngineObject {
+  constructor(pos, kind) {
+    const definition = PART_DEFINITIONS[kind];
+    if (!definition) {
+      throw new TypeError(`Unsupported job part: ${kind}`);
+    }
+
+    super(pos, vec2(definition.width, definition.height));
+    this.kind = kind;
+    this.definition = definition;
     this.mass = 0;
     this.renderOrder = 12;
   }
@@ -547,24 +568,38 @@ class DuctSection extends LJS.EngineObject {
       return;
     }
 
-    gameState = collectDuct(gameState);
+    gameState = collectPart(gameState, this.kind);
     this.destroy();
     updateHud();
 
     if (gameState.status === 'won') {
-      announce('All duct sections collected. Job complete.');
+      announce('All HVAC parts collected. Loadout complete.');
       showOverlay(
-        'DUCT RUN COMPLETE!',
-        `Mr. BB secured all ${gameState.totalDucts} duct sections with ${gameState.score} points.`,
+        'LOADOUT COMPLETE!',
+        `Mr. BB collected ${inventorySummary(gameState.inventory)} for ${gameState.score} points.`,
         'RUN IT AGAIN',
       );
     } else {
-      announce(`Duct secured. ${gameState.collectedDucts} of ${gameState.totalDucts}.`);
+      announce(`${this.definition.label} secured. ${gameState.collectedParts} of ${gameState.totalParts}.`);
     }
   }
 
   render() {
     const pulse = 1 + Math.sin(LJS.time * 5 + this.pos.x) * 0.06;
+    LJS.drawCircle(this.pos, Math.max(this.size.x, this.size.y) * 0.72 * pulse, colors.pickupGlow);
+
+    if (this.kind === 'round') {
+      this.renderRound(pulse);
+    } else if (this.kind === 'elbow') {
+      this.renderElbow(pulse);
+    } else if (this.kind === 'screws') {
+      this.renderScrews(pulse);
+    } else {
+      this.renderRectangular(pulse);
+    }
+  }
+
+  renderRectangular(pulse) {
     const size = vec2(this.size.x * pulse, this.size.y);
     LJS.drawRect(this.pos, size, colors.steel, 0.08);
     LJS.drawRect(this.pos.add(vec2(0, 0.15)), vec2(size.x * 0.9, 0.16), colors.steelLight, 0.08);
@@ -573,12 +608,59 @@ class DuctSection extends LJS.EngineObject {
     LJS.drawCircle(this.pos.add(vec2(0.23, -0.12)), 0.06, colors.steelDark);
     LJS.drawCircle(this.pos.add(vec2(-0.23, -0.12)), 0.06, colors.steelDark);
   }
+
+  renderRound(pulse) {
+    LJS.drawCircle(this.pos, 0.41 * pulse, colors.steelDark);
+    LJS.drawCircle(this.pos, 0.34 * pulse, colors.steel);
+    LJS.drawCircle(this.pos.add(vec2(0.035, -0.01)), 0.235 * pulse, colors.deep);
+    LJS.drawCircle(this.pos.add(vec2(-0.13, 0.15)), 0.055, colors.steelLight);
+    for (const x of [-0.29, 0.29]) {
+      LJS.drawRect(this.pos.add(vec2(x * pulse, 0)), vec2(0.07, 0.58), colors.steelLight, 0.02);
+    }
+  }
+
+  renderElbow(pulse) {
+    const horizontal = this.pos.add(vec2(-0.12, 0.15));
+    const vertical = this.pos.add(vec2(0.15, -0.12));
+    LJS.drawRect(horizontal, vec2(0.66 * pulse, 0.34), colors.steelDark, 0.02);
+    LJS.drawRect(vertical, vec2(0.34, 0.66 * pulse), colors.steelDark, 0.02);
+    LJS.drawCircle(this.pos.add(vec2(0.14, 0.14)), 0.3 * pulse, colors.steelDark);
+    LJS.drawRect(horizontal, vec2(0.58 * pulse, 0.24), colors.steel, 0.02);
+    LJS.drawRect(vertical, vec2(0.24, 0.58 * pulse), colors.steel, 0.02);
+    LJS.drawCircle(this.pos.add(vec2(0.14, 0.14)), 0.22 * pulse, colors.steel);
+    LJS.drawCircle(this.pos.add(vec2(0.22, 0.22)), 0.08, colors.deep);
+  }
+
+  renderScrews(pulse) {
+    const screws = [
+      [-0.26, 0.16, 0.36, -0.27],
+      [-0.18, -0.16, 0.43, 0.18],
+      [0.04, 0.25, 0.28, -0.36],
+    ];
+
+    for (const [x, y, deltaX, deltaY] of screws) {
+      const head = this.pos.add(vec2(x * pulse, y));
+      const tip = head.add(vec2(deltaX * pulse, deltaY));
+      LJS.drawLine(head, tip, 0.09, colors.steelDark);
+      LJS.drawLine(head, tip, 0.045, colors.steelLight);
+      LJS.drawCircle(head, 0.105, colors.steel);
+      LJS.drawLine(head.add(vec2(-0.055, 0)), head.add(vec2(0.055, 0)), 0.025, colors.steelDark);
+    }
+  }
 }
 
-class MasticBucket extends LJS.EngineObject {
-  constructor(pos) {
-    super(pos, vec2(0.8, 0.85));
+class FallingHazard extends LJS.EngineObject {
+  constructor(pos, kind) {
+    const definition = HAZARD_DEFINITIONS[kind];
+    if (!definition) {
+      throw new TypeError(`Unsupported falling hazard: ${kind}`);
+    }
+
+    super(pos, vec2(definition.width, definition.height));
+    this.kind = kind;
+    this.definition = definition;
     this.startPos = pos.copy();
+    this.spinDirection = Math.floor(pos.x * 10) % 2 ? -1 : 1;
     this.mass = 0;
     this.gravityScale = 0;
     this.renderOrder = 13;
@@ -590,7 +672,7 @@ class MasticBucket extends LJS.EngineObject {
   reset() {
     this.pos = this.startPos.copy();
     this.velocity = vec2();
-    this.angle = 0;
+    this.angle = this.kind === 'lumber' ? 0.08 * this.spinDirection : 0;
     this.angleVelocity = 0;
     this.mass = 0;
     this.gravityScale = 0;
@@ -612,8 +694,8 @@ class MasticBucket extends LJS.EngineObject {
     if (!this.active && Math.abs(player.pos.x - this.pos.x) < 2.7) {
       this.active = true;
       this.mass = 1;
-      this.gravityScale = 1.45;
-      this.angleVelocity = 0.035;
+      this.gravityScale = this.definition.gravityScale;
+      this.angleVelocity = this.definition.spin * this.spinDirection;
     }
 
     if (!this.active) {
@@ -621,7 +703,7 @@ class MasticBucket extends LJS.EngineObject {
     }
 
     if (this.isOverlappingObject(player)) {
-      player.takeMasticHit(this);
+      player.takeHazardHit(this);
       this.reset();
       return;
     }
@@ -631,7 +713,23 @@ class MasticBucket extends LJS.EngineObject {
     }
   }
 
+  localPoint(x, y) {
+    const cosine = Math.cos(this.angle);
+    const sine = Math.sin(this.angle);
+    return this.pos.add(vec2(x * cosine - y * sine, x * sine + y * cosine));
+  }
+
   render() {
+    if (this.kind === 'hammer') {
+      this.renderHammer();
+    } else if (this.kind === 'lumber') {
+      this.renderLumber();
+    } else {
+      this.renderMastic();
+    }
+  }
+
+  renderMastic() {
     const points = [
       vec2(-0.36, 0.3),
       vec2(0.36, 0.3),
@@ -639,14 +737,25 @@ class MasticBucket extends LJS.EngineObject {
       vec2(-0.28, -0.35),
     ];
     LJS.drawPoly(points, colors.bucket, 0.04, colors.bucketEdge, this.pos, this.angle);
-    LJS.drawRect(this.pos.add(vec2(0, 0.28)), vec2(0.78, 0.12), colors.bucketEdge, this.angle);
-    LJS.drawRect(this.pos.add(vec2(0, 0.19)), vec2(0.58, 0.16), colors.orange, this.angle);
-    LJS.drawLine(
-      this.pos.add(vec2(-0.27, 0.34)),
-      this.pos.add(vec2(0.27, 0.34)),
-      0.05,
-      colors.steelLight,
-    );
+    LJS.drawRect(this.localPoint(0, 0.28), vec2(0.78, 0.12), colors.bucketEdge, this.angle);
+    LJS.drawRect(this.localPoint(0, 0.19), vec2(0.58, 0.16), colors.orange, this.angle);
+    LJS.drawLine(this.localPoint(-0.27, 0.34), this.localPoint(0.27, 0.34), 0.05, colors.steelLight);
+  }
+
+  renderHammer() {
+    LJS.drawRect(this.localPoint(0, -0.14), vec2(0.17, 0.72), colors.woodDark, this.angle);
+    LJS.drawRect(this.localPoint(0, -0.13), vec2(0.1, 0.66), colors.woodLight, this.angle);
+    LJS.drawRect(this.localPoint(0, 0.27), vec2(0.72, 0.28), colors.steelDark, this.angle);
+    LJS.drawRect(this.localPoint(-0.05, 0.3), vec2(0.58, 0.13), colors.steel, this.angle);
+    LJS.drawRect(this.localPoint(0.34, 0.27), vec2(0.08, 0.32), colors.bucketEdge, this.angle);
+  }
+
+  renderLumber() {
+    LJS.drawRect(this.pos, vec2(1.16, 0.34), colors.woodDark, this.angle);
+    LJS.drawRect(this.pos, vec2(1.08, 0.25), colors.woodLight, this.angle);
+    LJS.drawRect(this.localPoint(0, 0.06), vec2(1.02, 0.055), colors.wood, this.angle);
+    LJS.drawCircle(this.localPoint(-0.28, -0.02), 0.045, colors.woodDark);
+    LJS.drawCircle(this.localPoint(0.31, 0.035), 0.035, colors.woodDark);
   }
 }
 
@@ -655,8 +764,8 @@ class Player extends LJS.EngineObject {
     super(pos, vec2(0.68, 1.03));
     this.standingSize = vec2(0.68, 1.03);
     this.crouchingSize = vec2(0.68, 0.66);
-    this.standingDrawSize = vec2(1.28, 1.35);
-    this.crouchingDrawSize = vec2(1.34, 0.88);
+    this.standingDrawSize = vec2(1.92, 1.75);
+    this.crouchingDrawSize = vec2(1.98, 1.15);
     this.drawSize = this.standingDrawSize.copy();
     this.renderOrder = 20;
     this.coyoteFrames = 0;
@@ -705,23 +814,27 @@ class Player extends LJS.EngineObject {
     this.invulnerableFrames = Math.max(this.invulnerableFrames, 90);
   }
 
-  takeMasticHit(bucket) {
+  takeHazardHit(hazard) {
     if (this.invulnerableFrames > 0 || gameState.status !== 'playing') {
       return;
     }
 
-    gameState = takeMasticHit(gameState);
+    gameState = applyHazardHit(gameState);
     clearAllControls();
     updateHud();
     this.invulnerableFrames = 100;
-    const direction = Math.sign(this.pos.x - bucket.pos.x) || 1;
+    const direction = Math.sign(this.pos.x - hazard.pos.x) || 1;
     this.velocity = vec2(direction * 0.22, 0.24);
 
     if (gameState.status === 'lost') {
       announce('No hard hats left.');
-      showOverlay('SHIFT OVER', 'The mastic got Mr. BB. Reset the run and try a cleaner route.', 'TRY AGAIN');
+      showOverlay(
+        'SHIFT OVER',
+        `The ${hazard.definition.label.toLowerCase()} got Mr. BB. Reset the run and try a cleaner route.`,
+        'TRY AGAIN',
+      );
     } else {
-      announce(`Mastic hit. ${gameState.lives} hard hats left.`);
+      announce(`${hazard.definition.label} hit. ${gameState.lives} hard hats left.`);
     }
   }
 
@@ -812,7 +925,7 @@ class Player extends LJS.EngineObject {
     const bob = this.groundObject && moving && !this.crouching ? Math.sin(LJS.time * 15) * 0.045 : 0;
     const tint = this.invulnerableFrames > 0 && Math.floor(this.invulnerableFrames / 6) % 2 ? rgb(1, 1, 1, 0.25) : rgb(1, 1, 1);
     LJS.drawTile(
-      this.pos.add(vec2(0, (this.crouching ? 0.08 : 0.18) + bob)),
+      this.pos.add(vec2(0, (this.crouching ? 0.24 : 0.36) + bob)),
       this.drawSize,
       heroTile,
       tint,
@@ -833,42 +946,20 @@ const platformLayout = [
   [50.3, 2.6, 3.0, 0.55, true],
 ];
 
-const ductLayout = [
-  [4.0, 1.75],
-  [6.1, 4.0],
-  [8.1, 4.0],
-  [14.2, 5.8],
-  [20.0, 4.0],
-  [22.1, 4.0],
-  [28.7, 5.7],
-  [36.8, 4.2],
-  [44.3, 5.8],
-  [50.3, 3.6],
-];
-
-const bucketLayout = [
-  [10.6, 10.3],
-  [18.0, 9.7],
-  [25.0, 10.5],
-  [33.0, 9.8],
-  [41.0, 10.4],
-  [48.2, 9.9],
-];
-
 function setupWorld(status = 'intro') {
   LJS.engineObjectsDestroy();
-  gameState = createGameState(TOTAL_DUCTS, status);
+  gameState = createGameState(TOTAL_PARTS, status);
 
   for (const [x, y, width, height, raised] of platformLayout) {
     new Platform(vec2(x, y), vec2(width, height), raised);
   }
 
-  for (const [x, y] of ductLayout) {
-    new DuctSection(vec2(x, y));
+  for (const [x, y, kind] of PART_LAYOUT) {
+    new JobPart(vec2(x, y), kind);
   }
 
-  for (const [x, y] of bucketLayout) {
-    new MasticBucket(vec2(x, y));
+  for (const [x, y, kind] of HAZARD_LAYOUT) {
+    new FallingHazard(vec2(x, y), kind);
   }
 
   player = new Player(PLAYER_START.copy());
@@ -941,7 +1032,7 @@ function gameInit() {
   LJS.setObjectDefaultDamping(0.99);
   LJS.setObjectDefaultAngleDamping(0.94);
   LJS.setCameraScale(60);
-  heroTile = LJS.tile(vec2(0), vec2(488, 512), 0, 0, 0);
+  heroTile = LJS.tile(vec2(0), vec2(488, 446), 0, 0, 0);
   setupWorld('intro');
 
   engineReady = true;

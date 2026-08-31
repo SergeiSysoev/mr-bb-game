@@ -1,6 +1,42 @@
 # Image generation prompts
 
-Both assets were generated as original artwork for Mr. BB. No Nintendo or Mario assets were used.
+All assets were generated as original artwork for Mr. BB. No Nintendo or Mario assets were used.
+
+## `assets/mr-bb-v2.png`
+
+Initial mode: built-in `precise-object-edit`
+Current revision mode: built-in `background-extraction`
+
+- Generated: 2026-08-31 with OpenAI image generation through Codex
+- Project file: resized from the transparent generated cutout to 488×446 for the LittleJS texture
+- Project file SHA-256: `4d2fe1020b630a07023c62ce6e2a8b2c5dd060c6388c46ec327770f4ed4fc83f`
+- Project usage: included by the project owner under this repository's MIT license
+
+### Proportion redesign prompt
+
+```text
+Use case: stylized-concept
+Asset type: transparent game character sprite/cutout for a side-scrolling HVAC construction platformer
+Input images: Image 1 is the existing Mr. BB character and the edit target
+Primary request: Redesign only the character proportions so Mr. BB reads clearly at small phone-game scale. Give him an oversized expressive head, compact short torso, short sturdy limbs, large gloves and boots, and a playful three-heads-tall arcade mascot silhouette. Keep a dynamic running pose facing right.
+Subject invariants: Same original clean-shaven adult HVAC worker identity and friendly expression; absolutely no beard and no mustache; brown construction hard hat; dark-blue work shirt; orange/yellow high-visibility vest; gray work pants; brown work boots; work gloves.
+Style/medium: polished original 2D cartoon platform-game sprite, bold clean outline, simple high-contrast shapes, minimal tiny detail, readable silhouette, production-ready.
+Composition/framing: one full-body character centered, all limbs and hard hat fully visible, generous transparent padding, square canvas.
+Background: genuinely transparent alpha background.
+Constraints: change proportions and cartoon readability while preserving the outfit, brown hard hat, clean-shaven face, colors, right-facing running action, and character identity; no text; no logos; no watermark.
+Avoid: any resemblance to Mario or other Nintendo characters, red plumber clothing, blue overalls, white gloves, cap with a letter, mustache, beard, copyrighted game character styling, extra people, duplicate limbs, cropped feet or hard hat, scenery, shadows on an opaque background.
+```
+
+### Transparency correction prompt
+
+```text
+Use case: background-extraction
+Asset type: transparent game character sprite/cutout
+Input images: Image 1 is the exact edit target
+Primary request: Remove the entire gray-and-white checkerboard background and replace it with genuine transparent alpha.
+Constraints: change only the background; preserve the Mr. BB character exactly, including his oversized-head proportions, clean-shaven face with no mustache or beard, brown hard hat, pose, outline, colors, clothing, gloves, boots, facial expression, and all edges; keep the complete uncropped character centered; no added shadow; no text; no logo; no watermark.
+Avoid: baked checkerboard, white background, gray background, colored halo, edge fringing, any character redesign.
+```
 
 ## `assets/mr-bb.png`
 

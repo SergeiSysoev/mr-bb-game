@@ -9,7 +9,7 @@
   "scripts": {
     "dev": "vite --host 127.0.0.1",
     "build": "vite build",
-    "lint": "node --check src/game.js && node --check src/game-logic.js && node --check src/gesture-input.js && node --check src/viewport.js && node --check vite.config.js",
+    "lint": "node --check src/game.js && node --check src/game-logic.js && node --check src/level-data.js && node --check src/gesture-input.js && node --check src/viewport.js && node --check vite.config.js",
     "test": "node --test"
   },
   "devDependencies": {
