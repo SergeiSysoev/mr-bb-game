@@ -5,12 +5,15 @@ All assets were generated as original artwork for Mr. BB. No Nintendo or Mario a
 ## `assets/mr-bb-v2.png`
 
 Initial mode: built-in `precise-object-edit`
-Current revision mode: built-in `background-extraction`
+Current revision modes: built-in `precise-object-edit`, then built-in `background-extraction`
 
 - Generated: 2026-08-31 with OpenAI image generation through Codex
+- Revised: 2026-08-31 — bald head, light eyebrows, and subtle light stubble
 - Project file: resized from the transparent generated cutout to 488×446 for the LittleJS texture
-- Project file SHA-256: `4d2fe1020b630a07023c62ce6e2a8b2c5dd060c6388c46ec327770f4ed4fc83f`
+- Project file SHA-256: `0bfdf59aaebf5eb8d9e82fd9180d479afae8ba4d3d5622051e0930e083d92a2c`
 - Project usage: included by the project owner under this repository's MIT license
+
+The latest identity correction below supersedes the clean-shaven and dark-hair details in the original proportion prompt.
 
 ### Proportion redesign prompt
 
@@ -38,7 +41,34 @@ Constraints: change only the background; preserve the Mr. BB character exactly, 
 Avoid: baked checkerboard, white background, gray background, colored halo, edge fringing, any character redesign.
 ```
 
-## `assets/mr-bb.png`
+### Bald identity correction prompt
+
+```text
+Use case: precise-object-edit
+Asset type: transparent 2D game character sprite/cutout for the Mr. BB HVAC platformer
+Input images: Image 1 is the exact edit target
+Primary request: Change only Mr. BB's hair, eyebrows, and facial stubble. Make him visibly bald by removing every visible patch of dark hair beneath and behind the hard hat, including the dark hair at the temple, around the ear, and at the back of the head; replace those areas with naturally shaded bare scalp matching his skin. Change both eyebrows from dark brown/black to clearly light blond/light beige eyebrows that remain easy to read at small game scale. Add subtle very light blond-to-pale-gray short stubble across the lower cheeks, jawline, and chin, like one or two days of light unshaven growth.
+Subject invariants: Preserve the exact same original friendly adult HVAC worker identity, oversized cartoon head and compact body proportions, facial expression, eye shape, nose, ears, dynamic right-facing running pose, brown construction hard hat, blue shirt, orange/yellow safety vest, gray pants, gloves, brown boots, colors, outlines, lighting, crop, and transparent padding.
+Style/medium: Preserve the exact polished original 2D cartoon platform-game sprite style, bold clean outline, high-contrast readable silhouette.
+Background: preserve genuine transparent alpha.
+Constraints: The scalp must read as bald wherever visible under the hard hat. Eyebrows must be light, not dark. Stubble must be light-colored, short, sparse, and subtle; it is not a beard and not a moustache. Keep one complete uncropped character only. No text, logo, shadow outside the character, or watermark.
+Avoid: any visible dark head hair, dark eyebrows, thick beard, full beard, goatee, moustache, dark facial hair, red plumber clothing, cap with a letter, Mario or Nintendo resemblance, changed pose, changed anatomy, changed outfit, changed hard-hat color, opaque background, checkerboard background, extra objects, duplicate limbs.
+```
+
+### Latest transparency correction prompt
+
+```text
+Use case: background-extraction
+Asset type: transparent 2D game character sprite/cutout
+Input images: Image 1 is the exact edit target
+Primary request: Remove the entire gray-and-white checkerboard background and replace it with genuine transparent alpha.
+Constraints: Change only the background. Preserve Mr. BB exactly as shown, including his completely bald head with no visible dark hair beneath the brown hard hat, clearly light blond/light beige eyebrows, subtle light blond-to-pale-gray short stubble on the lower cheeks, jaw, and chin, clean upper lip with no moustache, oversized cartoon head and compact body, facial expression, pose, outlines, colors, brown hard hat, blue shirt, orange/yellow vest, gray pants, gloves, boots, anatomy, lighting, and all edges. Keep the complete uncropped character centered. No added shadow, text, logo, or watermark.
+Avoid: baked checkerboard, white background, gray background, colored halo, edge fringing, dark head hair, dark eyebrows, thick beard, moustache, character redesign, altered pose, cropped hard hat or feet.
+```
+
+## `assets/mr-bb.png` — retired legacy sprite
+
+Status: retained only for provenance; the runtime must use `assets/mr-bb-v2.png`.
 
 Initial mode: built-in `stylized-concept`
 Current revision modes: built-in `precise-object-edit`, then built-in `background-extraction`
@@ -87,8 +117,9 @@ Initial mode: built-in `ads-marketing`
 Current revision mode: built-in `precise-object-edit`
 
 - Generated: 2026-08-31 with OpenAI image generation through Codex
-- Revised: 2026-08-31 — clean-shaven face and brown hard hat
-- Project file SHA-256: `5e2a00bdca8fb1c9acfb045c1fe316bc99d1fe66cceed7a54c0cb9cd1b60072a`
+- Revised: 2026-08-31 — bald head, light eyebrows, subtle light stubble, and brown hard hat
+- Project file: resized to the declared 1200×675 social-card dimensions
+- Project file SHA-256: `c9030ddbf586f88d75c1276d21b4f00e0465d42723465a7c88da2b3f2b2d04db`
 - Project usage: included by the project owner under this repository's MIT license
 
 ### Initial generation prompt
@@ -108,7 +139,7 @@ Constraints: Landscape social-card layout; original friendly HVAC worker; yellow
 Avoid: Any Mario resemblance, red plumber styling, Nintendo characters or assets, copyrighted game characters, extra people, extra words, misspellings, duplicate text, unrelated logos, brand marks, signatures, borders, or watermark.
 ```
 
-### Current revision prompt
+### Brown hard-hat revision prompt
 
 ```text
 Use case: precise-object-edit
@@ -118,4 +149,18 @@ Primary request: Change only two details on the running worker: (1) remove his e
 Text (verbatim): Preserve "MR. BB" exactly once and "DUCT RUN" exactly once, perfectly spelled and fully legible in the exact existing positions and styles.
 Constraints: Preserve the exact 16:9 composition, worker identity, expression, running pose, anatomy, clothing, orange safety vest, HVAC jobsite, shiny rectangular and spiral ductwork, falling gray mastic bucket, orange mastic splash, lighting, palette, title typography, supporting-copy typography, crop, and overall polished 2D game-illustration style. Do not change anything except facial hair removal and hard-hat color. No new text, logos, signatures, borders, or watermark.
 Avoid: beard, moustache, goatee, stubble, yellow hard hat, orange hard hat, red hard hat, misspelled text, duplicate text, extra people, changed background, changed bucket, changed ducts, Mario resemblance.
+```
+
+### Current identity revision prompt
+
+```text
+Use case: precise-object-edit
+Asset type: existing 16:9 social-preview card for the browser game Mr. BB — Duct Run
+Input images: Image 1 is the exact edit target
+Primary request: Change only the running worker's visible head hair, eyebrows, and facial stubble. Make him visibly bald by removing every dark hair patch and dark hairline visible beneath and behind the brown hard hat, including the temple, side, and rear of the head; replace those areas with naturally shaded bare scalp matching his skin. Change both eyebrows from dark brown/black to clearly light blond/light beige. Add subtle very light blond-to-pale-gray short stubble across the lower cheeks, jawline, and chin, like one or two days of light unshaven growth. Keep the upper lip clean with absolutely no moustache.
+Text (verbatim): Preserve "MR. BB" exactly once and "DUCT RUN" exactly once, perfectly spelled, fully legible, and in the exact existing positions and styles.
+Subject invariants: Preserve the exact worker identity, friendly expression, eyes, nose, ears, body proportions, running pose, brown hard hat, navy shirt, orange safety vest, gray/blue work pants, gloves, boots, tool belt, and all lighting and shadows.
+Scene invariants: Preserve the exact 16:9 composition, HVAC construction site, shiny rectangular and spiral ductwork, falling mastic bucket, orange mastic splash, background, camera angle, crop, color palette, title typography, and supporting-copy typography.
+Constraints: Change only hair, eyebrow color, and subtle light stubble. Bald scalp must be visible wherever hair was previously visible. Light stubble is not a beard, goatee, or moustache. No new text, logo, signature, border, or watermark.
+Avoid: dark head hair, dark hairline, dark eyebrows, thick beard, full beard, goatee, moustache, dark facial hair, misspelled or changed text, duplicate text, changed construction scene, changed bucket or ducts, changed outfit, changed hard-hat color, extra people, Mario or Nintendo resemblance.
 ```

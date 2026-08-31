@@ -1,3 +1,4 @@
+import { createHash } from 'node:crypto';
 import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
 import test from 'node:test';
@@ -37,6 +38,7 @@ test('the larger cartoon Mr. BB asset keeps transparent sprite dimensions and a 
   ]);
 
   assert.match(markup, /assets\/mr-bb-v2\.png/);
+  assert.match(markup, /Bald cartoon Mr\. BB with light eyebrows, light stubble/);
   assert.match(gameSource, /HERO_SOURCE.*assets\/mr-bb-v2\.png/);
   assert.match(gameSource, /standingSize = vec2\(0\.68, 1\.03\)/);
   assert.match(gameSource, /standingDrawSize = vec2\(1\.92, 1\.75\)/);
@@ -45,6 +47,24 @@ test('the larger cartoon Mr. BB asset keeps transparent sprite dimensions and a 
   assert.equal(hero.readUInt32BE(16), 488);
   assert.equal(hero.readUInt32BE(20), 446);
   assert.equal(hero[25], 6, 'hero PNG must retain an RGBA alpha channel');
+  assert.equal(
+    createHash('sha256').update(hero).digest('hex'),
+    '0bfdf59aaebf5eb8d9e82fd9180d479afae8ba4d3d5622051e0930e083d92a2c',
+    'hero sprite must match the approved bald, light-eyebrow, light-stubble artwork',
+  );
+});
+
+test('the social preview keeps the approved bald Mr. BB identity artwork', async () => {
+  const socialCard = await readProjectAsset('public/og.png');
+
+  assert.equal(socialCard.subarray(1, 4).toString('ascii'), 'PNG');
+  assert.equal(socialCard.readUInt32BE(16), 1200);
+  assert.equal(socialCard.readUInt32BE(20), 675);
+  assert.equal(
+    createHash('sha256').update(socialCard).digest('hex'),
+    'c9030ddbf586f88d75c1276d21b4f00e0465d42723465a7c88da2b3f2b2d04db',
+    'social preview must match the approved bald, light-eyebrow, light-stubble artwork',
+  );
 });
 
 test('level one presents varied parts and falling construction hazards', async () => {
