@@ -5,13 +5,15 @@ All assets were generated as original artwork for Mr. BB. No Nintendo or Mario a
 ## `assets/mr-bb-v2.png`
 
 Initial mode: built-in `precise-object-edit`
-Current revision modes: built-in `precise-object-edit`, then built-in `background-extraction`
+Current revision modes: built-in `precise-object-edit`, built-in `background-extraction`, then local connected-background alpha cleanup with Node/ffmpeg (no generative redraw)
 
 - Generated: 2026-08-31 with OpenAI image generation through Codex
 - Revised: 2026-08-31 — bald head, light eyebrows, and subtle light stubble
-- Project file: resized from the transparent generated cutout to 488×446 for the LittleJS texture
-- Project file SHA-256: `0bfdf59aaebf5eb8d9e82fd9180d479afae8ba4d3d5622051e0930e083d92a2c`
+- Revised again: 2026-08-31 — plain blue denim jeans without knee pads, charcoal-gray gloves with small white `BB` marks, no side pouches, and one original black four-pocket tool apron centered across the front of the waist
+- Project file: the generated cutout received the documented connected-background alpha cleanup, was resized to 488×446, then was mechanically scaled and bottom-anchored to match the previous approved character footprint in the LittleJS texture
+- Project file SHA-256: `44636e90e652f9b0932b5a3a9f47d5d550f375f7e9f28a603e29f5d74e685699`
 - Project usage: included by the project owner under this repository's MIT license
+- Structural reference only: the user-supplied `Photo 1.jpg` black waist-apron image and [Lowe's model 106668-BLKXL](https://www.lowes.com/pd/Carhartt-Men-s-Black-Canvas-Waist-Apron-X-Large-Adjustable-Strap-12-ounce-Cotton-Duck-Construction-4-Large-Pockets/5014783235); all brand marks and proprietary plaques were excluded from the original Mr. BB design
 
 The latest identity correction below supersedes the clean-shaven and dark-hair details in the original proportion prompt.
 
@@ -65,6 +67,60 @@ Primary request: Remove the entire gray-and-white checkerboard background and re
 Constraints: Change only the background. Preserve Mr. BB exactly as shown, including his completely bald head with no visible dark hair beneath the brown hard hat, clearly light blond/light beige eyebrows, subtle light blond-to-pale-gray short stubble on the lower cheeks, jaw, and chin, clean upper lip with no moustache, oversized cartoon head and compact body, facial expression, pose, outlines, colors, brown hard hat, blue shirt, orange/yellow vest, gray pants, gloves, boots, anatomy, lighting, and all edges. Keep the complete uncropped character centered. No added shadow, text, logo, or watermark.
 Avoid: baked checkerboard, white background, gray background, colored halo, edge fringing, dark head hair, dark eyebrows, thick beard, moustache, character redesign, altered pose, cropped hard hat or feet.
 ```
+
+### Plain-jeans and front-apron outfit revision prompt
+
+```text
+Use case: precise-object-edit
+Asset type: transparent 2D game character sprite/cutout for the original Mr. BB HVAC platformer.
+
+Input images:
+- Image 1 is the exact character edit target.
+- Image 2 is a reference ONLY for the general construction, silhouette, and front-worn placement of a black multi-pocket waist tool apron. Do not copy any brand marks, plaques, logos, or exact proprietary details from Image 2.
+
+Primary request: Change only Mr. BB's jeans, gloves, and tool-storage garment.
+
+Required clothing edits:
+1. Replace the current gray work pants with ordinary plain medium-blue denim jeans. The jeans must be simple continuous denim with normal seams and natural folds only. Absolutely no knee pads, no knee patches, no reinforced knee panels, no contrasting shapes or accessories on either knee.
+2. Replace the current tan/orange padded gauntlet gloves with ordinary fitted work gloves in charcoal black and medium gray. Keep the gloves simple, flexible, and believable, with a tiny clean white "BB" marking on the back of each glove where visible.
+3. Remove every side tool pocket, hip pouch, holster, side-mounted tool holder, and all tools hanging at either hip.
+4. Add one original black/charcoal canvas waist tool apron worn across the FRONT of his lower abdomen at the belt line. It must hang centered in front like Image 2: a wide waistband/strap with four distinct open front pockets arranged across the belly, compact enough for running, with only a few small generic tool handles peeking from the FRONT pockets. The front apron must clearly replace the side pouches. No branded metal plaques and no recognizable third-party logo.
+
+Identity and pose invariants: Preserve the exact same friendly Mr. BB identity, oversized cartoon head, compact body, facial expression, eye shape, nose, ears, completely bald scalp under the hard hat, light blond/light beige eyebrows, subtle pale-blond short stubble on lower cheeks/jaw/chin, clean upper lip with no moustache, brown construction hard hat, dark-blue shirt, orange/yellow safety vest, brown work boots, dynamic right-facing running pose, anatomy, proportions, outline, lighting, crop, and transparent padding.
+
+Style/medium: preserve the exact polished original 2D cartoon platform-game sprite style, bold clean outline, high-contrast readable silhouette, production-ready.
+
+Background: preserve genuine transparent alpha. Keep one complete uncropped character centered with all limbs, boots, and hard hat fully visible.
+
+Text (verbatim): "BB" only, rendered very small in white on the backs of the dark gloves. No other text.
+
+Constraints: original generic construction apparel only; no Carhartt name or logo; no trademarks; no side pouches; no knee pads; no knee patches; no tan gloves; no orange gloves; no extra tools floating outside the apron; no new objects; no watermark.
+
+Avoid: altered face or identity, dark head hair, dark eyebrows, beard, moustache, gray pants, cargo pockets, knee panels, knee guards, hip holsters, side tool bags, brand marks, metal logo plaques, Mario/Nintendo resemblance, red plumber clothing, extra people, duplicate limbs, cropped body, opaque background, checkerboard background, scenery, external shadow.
+```
+
+### Final outfit alpha-extraction prompt
+
+```text
+Use case: background-extraction
+Asset type: production game sprite with a real transparent alpha channel.
+
+Input images:
+- Image 1 is the exact character artwork to isolate. Preserve this character and outfit exactly.
+- Image 2 is reference ONLY for the required genuine transparent-alpha file behavior and clean isolated edge treatment. Do not restore Image 2's old clothes.
+
+Primary request: Extract the entire complete Mr. BB character from Image 1 and place him on a truly transparent RGBA canvas. Delete every background pixel, including every light-gray and white checkerboard square. The checkerboard in Image 1 is a background artifact to remove, NOT a pattern to preserve or redraw.
+
+Absolute invariants: preserve the exact Image 1 character, face, bald scalp, light eyebrows, subtle pale stubble, clean upper lip, brown hard hat, running pose, blue shirt, orange/yellow vest, plain blue jeans with no knee pads or panels, dark charcoal-gray gloves with small white "BB", brown boots, and the centered black four-pocket front waist apron with tool handles and no side pouches. Preserve outlines, colors, lighting, scale, crop, and full uncropped body.
+
+Output requirement: PNG with actual transparent alpha outside the character. When viewed on a transparency grid, the grid must come from the viewer and must not exist as RGB pixels in the image. No solid white, gray, or colored background. No baked checkerboard.
+
+Text (verbatim): preserve only "BB" on the gloves.
+
+Avoid: any character redesign, old gray pants, tan gloves, side pouches, knee pads, background pattern, drop shadow, halo, edge fringing, logo, watermark, crop, extra objects.
+```
+
+The image-generation service returned the final cutout with a baked light checkerboard in an RGB PNG despite the extraction prompt. The project sprite therefore received a deterministic, non-generative connected-light-background removal and RGBA encoding pass with Node and ffmpeg before its 488×446 resize. The character pixels were not redrawn during this cleanup.
 
 ## `assets/mr-bb.png` — retired legacy sprite
 
@@ -120,9 +176,11 @@ Current revision mode: built-in `precise-object-edit`
 - Revised: 2026-08-31 — bald head, light eyebrows, subtle light stubble, and brown hard hat
 - Revised again: 2026-08-31 — removed the airborne mastic bucket and orange liquid; added flying screws and tools for the buttonless launch splash
 - Final title revision: 2026-08-31 — restored the clearly visible space in the exact title `MR. BB`
+- Outfit revision: 2026-08-31 — plain blue denim jeans without a knee pad, charcoal-gray gloves with small white `BB` marks, no side pouches, and one original black multi-pocket front waist apron
 - Project files: the same generated edit resized to 1200×675 for both the launch splash and social card
-- Project file SHA-256: `c16f5d5081fe3bb944dfec6072f1d9cc6f944eee4aab7e0e94f1a51948572d97`
+- Project file SHA-256: `e86f9c16a3350ebe8b2e5fb408f04c8af2a574481cb24f7f4ac3ea291fafa774`
 - Project usage: included by the project owner under this repository's MIT license
+- Structural reference only: the user-supplied `Photo 1.jpg` black waist-apron image and [Lowe's model 106668-BLKXL](https://www.lowes.com/pd/Carhartt-Men-s-Black-Canvas-Waist-Apron-X-Large-Adjustable-Strap-12-ounce-Cotton-Duck-Construction-4-Large-Pockets/5014783235); all brand marks and proprietary plaques were excluded from the original Mr. BB design
 
 ### Initial generation prompt
 
@@ -195,4 +253,33 @@ Primary edit: Change only the spacing in the large yellow title at upper left. I
 Absolute invariants: Preserve every pixel outside that small title-spacing region as closely as possible. Keep Mr. BB's exact identity, bald scalp, light blond eyebrows, subtle light-blond stubble, clean upper lip with no moustache, no full beard, brown hard hat, face, pose, clothes, lighting, and proportions. Keep the screws, tape measure, screwdriver, pliers, glove, motion trails, HVAC site, ducts, background, perspective, framing, colors, and 16:9 composition unchanged.
 
 Constraints: exact visible text "MR. BB" and "DUCT RUN"; no bucket; no orange mastic, liquid, paint, splash, or droplets; no new objects; no logos; no watermark.
+```
+
+### Plain-jeans and front-apron splash revision prompt
+
+```text
+Use case: precise-object-edit
+Asset type: existing 16:9 landscape launch splash and social card for the original web game "Mr. BB — Duct Run".
+
+Input images:
+- Image 1 is the exact artwork edit target.
+- Image 2 is a reference ONLY for the general construction, silhouette, pocket arrangement, and centered front-worn placement of a black canvas waist tool apron. Do not copy any brand marks, metal plaques, logos, or exact proprietary details from Image 2.
+
+Primary request: Change only the running worker's jeans, gloves, and tool-storage garment.
+
+Required clothing edits:
+1. Replace the worker's current blue work pants and visible gray knee pad/panel with ordinary plain medium-blue denim jeans. Both legs must be continuous normal denim with simple seams and natural folds only. Absolutely no knee pads, knee patches, reinforced knee panels, cargo panels, contrasting knee shapes, or accessories on either knee.
+2. Replace the current tan/brown gloves with ordinary fitted work gloves in charcoal black and medium gray. Add a tiny simple white "BB" marking on the back of each glove where visible.
+3. Remove every side tool pocket, hip pouch, tool holster, side-mounted bag, and all tools hanging from either hip.
+4. Add one original black/charcoal canvas waist tool apron worn across the FRONT of his lower abdomen at the belt line, centered like Image 2. It must be a wide compact front apron with four distinct open front pockets across the belly and only a few small generic tool handles peeking from those FRONT pockets. It must read as one front waist apron, not side pouches. No branded metal plaques and no recognizable third-party logo.
+
+Character invariants: Preserve Mr. BB's exact existing identity and face: completely bald scalp beneath the brown hard hat, light blond/light beige eyebrows, subtle pale-blond short stubble on the lower cheeks/jaw/chin, clean upper lip with no moustache, friendly expression, eye shape, nose, ears, head and body proportions, running pose, anatomy, brown hard hat, navy shirt, orange safety vest, brown boots, lighting, and shadows.
+
+Scene invariants: Preserve the exact 16:9 composition, HVAC construction site, all rectangular and spiral shiny ductwork, perspective, camera angle, cinematic polished cartoon style, lighting, color palette, framing, crop, motion, every flying silver screw, yellow-black tape measure, screwdriver, pliers, loose work glove, and their motion trails. There must remain no bucket and no orange mastic/liquid/paint/splash/droplets.
+
+Text (verbatim): Preserve the large title exactly once as "MR. BB" with a clearly visible normal space after the period, and preserve "DUCT RUN" exactly once. Keep both existing title areas fully legible, correctly spelled, unduplicated, and in their exact current positions and styles. Preserve only the tiny white "BB" markings on the gloves as additional clothing marks. No other text.
+
+Constraints: Change only pants, gloves, and tool storage. Original generic construction apparel only. No Carhartt name or logo; no trademarks; no side pouches; no knee pads; no tan gloves; no new airborne objects; no extra people; no watermark.
+
+Avoid: altered face or identity, dark head hair, dark eyebrows, beard, moustache, gray knee panels, cargo pants, hip holsters, side tool bags, brand marks, metal logo plaques, changed title spacing, misspelled or duplicate title, changed scene, changed ducts, bucket, orange liquid, Mario/Nintendo resemblance, red plumber clothing, cropped title, border, signature.
 ```

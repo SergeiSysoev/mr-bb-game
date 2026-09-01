@@ -2,6 +2,7 @@ import { createHash } from 'node:crypto';
 import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
 import test from 'node:test';
+import { inflateSync } from 'node:zlib';
 import {
   getGameCanvasSize,
   isPhoneLandscapeViewport,
@@ -11,6 +12,95 @@ import {
 const projectFile = (path) => new URL(`../${path}`, import.meta.url);
 const readProjectFile = (path) => readFile(projectFile(path), 'utf8');
 const readProjectAsset = (path) => readFile(projectFile(path));
+const PNG_SIGNATURE = Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]);
+
+const paethPredictor = (left, up, upperLeft) => {
+  const prediction = left + up - upperLeft;
+  const leftDistance = Math.abs(prediction - left);
+  const upDistance = Math.abs(prediction - up);
+  const upperLeftDistance = Math.abs(prediction - upperLeft);
+  if (leftDistance <= upDistance && leftDistance <= upperLeftDistance) return left;
+  return upDistance <= upperLeftDistance ? up : upperLeft;
+};
+
+const getRgbaPngAlphaStats = (png) => {
+  assert.deepEqual(png.subarray(0, PNG_SIGNATURE.length), PNG_SIGNATURE, 'hero must have a valid PNG signature');
+  const idatChunks = [];
+  let width;
+  let height;
+  let bitDepth;
+  let colorType;
+  let interlace;
+  let chunkOffset = 8;
+  let reachedEnd = false;
+
+  while (chunkOffset < png.length) {
+    assert.ok(chunkOffset + 12 <= png.length, 'PNG chunk header must be complete');
+    const chunkLength = png.readUInt32BE(chunkOffset);
+    assert.ok(chunkOffset + chunkLength + 12 <= png.length, 'PNG chunk data must stay in bounds');
+    const chunkType = png.subarray(chunkOffset + 4, chunkOffset + 8).toString('ascii');
+    const chunkData = png.subarray(chunkOffset + 8, chunkOffset + 8 + chunkLength);
+    if (chunkType === 'IHDR') {
+      width = chunkData.readUInt32BE(0);
+      height = chunkData.readUInt32BE(4);
+      bitDepth = chunkData[8];
+      colorType = chunkData[9];
+      interlace = chunkData[12];
+    } else if (chunkType === 'IDAT') {
+      idatChunks.push(chunkData);
+    } else if (chunkType === 'IEND') {
+      reachedEnd = true;
+      break;
+    }
+    chunkOffset += chunkLength + 12;
+  }
+
+  assert.equal(bitDepth, 8, 'hero PNG must remain 8-bit');
+  assert.equal(colorType, 6, 'hero PNG must remain RGBA');
+  assert.equal(interlace, 0, 'hero PNG must remain non-interlaced for contract decoding');
+  assert.equal(reachedEnd, true, 'hero PNG must contain an IEND chunk');
+  assert.ok(Number.isInteger(width) && width > 0, 'hero PNG must declare a positive width');
+  assert.ok(Number.isInteger(height) && height > 0, 'hero PNG must declare a positive height');
+  assert.ok(idatChunks.length > 0, 'hero PNG must contain image data');
+  const bytesPerPixel = 4;
+  const rowLength = width * bytesPerPixel;
+  const decoded = inflateSync(Buffer.concat(idatChunks));
+  assert.equal(decoded.length, height * (rowLength + 1), 'hero PNG scanline data must be complete');
+  const previousRow = Buffer.alloc(rowLength);
+  const currentRow = Buffer.alloc(rowLength);
+  let decodedOffset = 0;
+  let fullyTransparentPixels = 0;
+  let opaquePixels = 0;
+  const cornerAlphas = [];
+
+  for (let y = 0; y < height; y += 1) {
+    const filterType = decoded[decodedOffset++];
+    for (let x = 0; x < rowLength; x += 1) {
+      const source = decoded[decodedOffset++];
+      const left = x >= bytesPerPixel ? currentRow[x - bytesPerPixel] : 0;
+      const up = previousRow[x];
+      const upperLeft = x >= bytesPerPixel ? previousRow[x - bytesPerPixel] : 0;
+      let reconstructed;
+      if (filterType === 0) reconstructed = source;
+      else if (filterType === 1) reconstructed = source + left;
+      else if (filterType === 2) reconstructed = source + up;
+      else if (filterType === 3) reconstructed = source + Math.floor((left + up) / 2);
+      else if (filterType === 4) reconstructed = source + paethPredictor(left, up, upperLeft);
+      else throw new Error(`Unsupported PNG filter type: ${filterType}`);
+      currentRow[x] = reconstructed & 0xff;
+    }
+    for (let x = 3; x < rowLength; x += bytesPerPixel) {
+      if (currentRow[x] === 0) fullyTransparentPixels += 1;
+      else if (currentRow[x] === 255) opaquePixels += 1;
+    }
+    if (y === 0 || y === height - 1) {
+      cornerAlphas.push(currentRow[3], currentRow[rowLength - 1]);
+    }
+    currentRow.copy(previousRow);
+  }
+
+  return { cornerAlphas, fullyTransparentPixels, opaquePixels, pixelCount: width * height };
+};
 
 test('LittleJS global input interception stays disabled', async () => {
   const gameSource = await readProjectFile('src/game.js');
@@ -30,7 +120,7 @@ test('the published build retains the LittleJS MIT notice', async () => {
   assert.match(publicLicense, /Permission is hereby granted/);
 });
 
-test('the larger cartoon Mr. BB asset keeps transparent sprite dimensions and a compact hitbox', async () => {
+test('the larger cartoon Mr. BB asset keeps the approved front-apron outfit and real transparency', async () => {
   const [markup, gameSource, hero] = await Promise.all([
     readProjectFile('index.html'),
     readProjectFile('src/game.js'),
@@ -39,6 +129,7 @@ test('the larger cartoon Mr. BB asset keeps transparent sprite dimensions and a 
 
   assert.match(markup, /assets\/mr-bb-v2\.png/);
   assert.match(markup, /Bald cartoon Mr\. BB with light eyebrows, light stubble/);
+  assert.match(markup, /plain blue jeans, dark gloves, and a black front waist tool apron/);
   assert.match(gameSource, /HERO_SOURCE.*assets\/mr-bb-v2\.png/);
   assert.match(gameSource, /standingSize = vec2\(0\.68, 1\.03\)/);
   assert.match(gameSource, /standingDrawSize = vec2\(1\.92, 1\.75\)/);
@@ -47,14 +138,21 @@ test('the larger cartoon Mr. BB asset keeps transparent sprite dimensions and a 
   assert.equal(hero.readUInt32BE(16), 488);
   assert.equal(hero.readUInt32BE(20), 446);
   assert.equal(hero[25], 6, 'hero PNG must retain an RGBA alpha channel');
+  const alphaStats = getRgbaPngAlphaStats(hero);
+  assert.ok(
+    alphaStats.fullyTransparentPixels > alphaStats.pixelCount / 4,
+    'hero PNG must keep substantial fully transparent exterior space',
+  );
+  assert.deepEqual(alphaStats.cornerAlphas, [0, 0, 0, 0], 'all four hero PNG corners must be transparent');
+  assert.ok(alphaStats.opaquePixels > 0, 'hero PNG must retain visible character pixels');
   assert.equal(
     createHash('sha256').update(hero).digest('hex'),
-    '0bfdf59aaebf5eb8d9e82fd9180d479afae8ba4d3d5622051e0930e083d92a2c',
-    'hero sprite must match the approved bald, light-eyebrow, light-stubble artwork',
+    '44636e90e652f9b0932b5a3a9f47d5d550f375f7e9f28a603e29f5d74e685699',
+    'hero sprite must match the approved plain-jeans, dark-gloves, front-apron artwork',
   );
 });
 
-test('the launch splash and social preview keep the approved tool-scatter artwork', async () => {
+test('the launch splash and social preview keep the approved front-apron tool-scatter artwork', async () => {
   const [markup, launchSplash, socialCard] = await Promise.all([
     readProjectFile('index.html'),
     readProjectAsset('assets/mr-bb-splash.png'),
@@ -62,14 +160,16 @@ test('the launch splash and social preview keep the approved tool-scatter artwor
   ]);
 
   assert.match(markup, /src="\/assets\/mr-bb-splash\.png"/);
+  assert.match(markup, /black front waist tool apron/);
+  assert.deepEqual(socialCard, launchSplash, 'launch splash and social card must stay byte-identical');
   for (const artwork of [launchSplash, socialCard]) {
     assert.equal(artwork.subarray(1, 4).toString('ascii'), 'PNG');
     assert.equal(artwork.readUInt32BE(16), 1200);
     assert.equal(artwork.readUInt32BE(20), 675);
     assert.equal(
       createHash('sha256').update(artwork).digest('hex'),
-      'c16f5d5081fe3bb944dfec6072f1d9cc6f944eee4aab7e0e94f1a51948572d97',
-      'launch artwork must match the approved bald Mr. BB with flying screws and tools',
+      'e86f9c16a3350ebe8b2e5fb408f04c8af2a574481cb24f7f4ac3ea291fafa774',
+      'launch artwork must match the approved plain-jeans, dark-gloves, front-apron scene',
     );
   }
 });

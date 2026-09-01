@@ -10,6 +10,7 @@ Build and maintain a small, original HVAC construction platformer for the web.
 - Touch targets must be at least 44px and keyboard controls must remain available.
 - Keep the first level short: ten varied HVAC parts, falling construction hazards, three hard hats.
 - Keep Mr. BB bald with light eyebrows, subtle light stubble, no moustache or full beard, and a brown hard hat.
+- Keep Mr. BB in plain blue jeans with no knee pads or knee panels, dark gray/black gloves with a small white `BB`, and one black multi-pocket tool apron centered across the front of his waist; never restore side tool pouches.
 - Do not use Mario, Nintendo, or other copyrighted game art, audio, names, or level designs.
 - Preserve LittleJS MIT attribution and `vendor/LITTLEJS-LICENSE.txt`.
 - Prefer original assets, canvas primitives, and dependency-free gameplay code.
