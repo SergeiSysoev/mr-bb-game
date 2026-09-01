@@ -304,17 +304,59 @@ test('the blocking game overlay exposes dialog semantics', async () => {
 });
 
 test('landscape iPhones get a canvas matching their wide viewport', () => {
+  assert.equal(isPhoneLandscapeViewport(852, 393, true, 393), true);
+  assert.deepEqual(getGameCanvasSize(852, 393, true, 393), { width: 1560, height: 720 });
+  assert.deepEqual(getGameCanvasSize(932, 430, true, 430), { width: 1560, height: 720 });
+  assert.deepEqual(getGameCanvasSize(667, 375, true, 375), { width: 1281, height: 720 });
+});
+
+test('iPhones gate in portrait while iPads and iPad Split View do not', () => {
+  assert.equal(isPhonePortraitViewport(390, 844, true, 390), true);
+  assert.equal(isPhonePortraitViewport(820, 1180, true, 820), false);
+  assert.equal(isPhonePortraitViewport(390, 1024, true, 820), false);
+  assert.equal(isPhoneLandscapeViewport(744, 520, true, 820), false);
+});
+
+test('desktop and tablet layouts retain the original 4:3 canvas', () => {
+  assert.deepEqual(getGameCanvasSize(852, 393, false), { width: 960, height: 720 });
+  assert.deepEqual(getGameCanvasSize(1440, 900, false), { width: 960, height: 720 });
+  assert.deepEqual(getGameCanvasSize(820, 1180, true, 820), { width: 960, height: 720 });
+  assert.deepEqual(getGameCanvasSize(744, 520, true, 820), { width: 960, height: 720 });
+});
+
+test('legacy three-argument viewport calls retain their prior fallback behavior', () => {
   assert.equal(isPhoneLandscapeViewport(852, 393, true), true);
-  assert.deepEqual(getGameCanvasSize(852, 393, true), { width: 1560, height: 720 });
-  assert.deepEqual(getGameCanvasSize(932, 430, true), { width: 1560, height: 720 });
+  assert.equal(isPhonePortraitViewport(390, 844, true), true);
   assert.deepEqual(getGameCanvasSize(667, 375, true), { width: 1281, height: 720 });
 });
 
-test('desktop and portrait layouts retain the original 4:3 canvas', () => {
-  assert.deepEqual(getGameCanvasSize(852, 393, false), { width: 960, height: 720 });
-  assert.deepEqual(getGameCanvasSize(1440, 900, false), { width: 960, height: 720 });
-  assert.deepEqual(getGameCanvasSize(820, 1180, true), { width: 960, height: 720 });
-  assert.equal(isPhonePortraitViewport(390, 844, true), true);
+test('embed mode is opt-in and keeps regular frames centered without changing phone full bleed', async () => {
+  const [markup, gameSource, styles] = await Promise.all([
+    readProjectFile('index.html'),
+    readProjectFile('src/game.js'),
+    readProjectFile('styles.css'),
+  ]);
+
+  assert.doesNotMatch(markup, /is-embedded/);
+  assert.match(
+    gameSource,
+    /new URLSearchParams\(window\.location\.search\)\.get\('embed'\) === '1'/,
+  );
+  assert.match(gameSource, /documentRoot\.classList\.toggle\('is-embedded', isEmbedded\)/);
+  assert.match(gameSource, /Math\.min\(width, height\)/);
+  assert.match(
+    gameSource,
+    /documentRoot\.classList\.toggle\('is-phone-landscape', isPhoneLandscape\)/,
+  );
+  assert.match(
+    gameSource,
+    /portraitContinue\.addEventListener\('click', \(\) => \{[\s\S]*portraitOverride = true;[\s\S]*syncViewportLayout\(\);/,
+  );
+  assert.match(styles, /html\.is-embedded \.brand-bar,[\s\S]*html\.is-embedded \.game-footer/);
+  assert.match(styles, /html\.is-embedded \.page[\s\S]*place-items:\s*center/);
+  assert.match(styles, /html\.is-embedded \.stage-restart,[\s\S]*display:\s*grid/);
+  assert.match(styles, /html\.is-phone-landscape \.game-shell,[\s\S]*height:\s*100%/);
+  assert.doesNotMatch(styles, /@media \(pointer:\s*coarse\)[^{]*max-width:\s*1000px/);
 });
 
 test('the mobile release contract includes landscape and safe-area support', async () => {
@@ -330,7 +372,7 @@ test('the mobile release contract includes landscape and safe-area support', asy
   assert.match(markup, /rel="manifest"/);
   assert.match(markup, /id="orientation-gate"/);
   assert.match(markup, /id="portrait-continue"/);
-  assert.match(styles, /orientation:\s*landscape/);
+  assert.match(styles, /html\.is-phone-landscape/);
   assert.match(styles, /safe-area-inset-left/);
   assert.match(styles, /safe-area-inset-right/);
   assert.match(styles, /safe-area-inset-bottom/);

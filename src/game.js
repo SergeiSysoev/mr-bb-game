@@ -32,6 +32,10 @@ import {
 } from './player-animation.js';
 
 const { vec2, rgb } = LJS;
+const documentRoot = document.documentElement;
+const isEmbedded = new URLSearchParams(window.location.search).get('embed') === '1';
+
+documentRoot.classList.toggle('is-embedded', isEmbedded);
 
 const TOTAL_PARTS = PART_LAYOUT.length;
 const LEVEL_WIDTH = 54;
@@ -319,14 +323,27 @@ function hasCoarsePointer() {
   return window.matchMedia('(pointer: coarse)').matches;
 }
 
-function syncOrientationGate(width, height, coarsePointer) {
-  const isPhoneLandscape = isPhoneLandscapeViewport(width, height, coarsePointer);
+function getScreenMinorAxis() {
+  const { width, height } = window.screen;
+  return Number.isFinite(width) && Number.isFinite(height) && width > 0 && height > 0
+    ? Math.min(width, height)
+    : undefined;
+}
+
+function syncOrientationGate(width, height, coarsePointer, screenMinorAxis) {
+  const isPhoneLandscape = isPhoneLandscapeViewport(
+    width,
+    height,
+    coarsePointer,
+    screenMinorAxis,
+  );
+  documentRoot.classList.toggle('is-phone-landscape', isPhoneLandscape);
   if (isPhoneLandscape) {
     portraitOverride = false;
   }
 
   const shouldShowGate =
-    isPhonePortraitViewport(width, height, coarsePointer) && !portraitOverride;
+    isPhonePortraitViewport(width, height, coarsePointer, screenMinorAxis) && !portraitOverride;
   const gateWasVisible = !orientationGate.hidden;
 
   orientationGate.hidden = !shouldShowGate;
@@ -358,7 +375,8 @@ function syncOrientationGate(width, height, coarsePointer) {
 function syncViewportLayout() {
   const { width, height } = getViewportDimensions();
   const coarsePointer = hasCoarsePointer();
-  const canvasSize = getGameCanvasSize(width, height, coarsePointer);
+  const screenMinorAxis = getScreenMinorAxis();
+  const canvasSize = getGameCanvasSize(width, height, coarsePointer, screenMinorAxis);
   const nextCanvasSize = `${canvasSize.width}x${canvasSize.height}`;
 
   if (nextCanvasSize !== lastCanvasSize) {
@@ -366,7 +384,7 @@ function syncViewportLayout() {
     LJS.setCanvasFixedSize(vec2(canvasSize.width, canvasSize.height));
   }
 
-  syncOrientationGate(width, height, coarsePointer);
+  syncOrientationGate(width, height, coarsePointer, screenMinorAxis);
 }
 
 function scheduleViewportSync() {
