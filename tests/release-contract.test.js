@@ -13,6 +13,24 @@ const projectFile = (path) => new URL(`../${path}`, import.meta.url);
 const readProjectFile = (path) => readFile(projectFile(path), 'utf8');
 const readProjectAsset = (path) => readFile(projectFile(path));
 const PNG_SIGNATURE = Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]);
+const RUN_SPRITES = [
+  {
+    path: 'assets/mr-bb-run-contact-a.png',
+    sha256: '4d884c963922662a322e2f4bd600ff97bd6f8ce9efae95b144a92b1c81fa5250',
+  },
+  {
+    path: 'assets/mr-bb-run-passing-a.png',
+    sha256: 'df8c53f21bc197cd31112e8ba1a33a9281c4d88d37243047f92b0de92fbcb638',
+  },
+  {
+    path: 'assets/mr-bb-run-contact-b.png',
+    sha256: '7c3a868cecabee60d3b3b42e491993c2f580da101fe134c074a331c396959114',
+  },
+  {
+    path: 'assets/mr-bb-run-passing-b.png',
+    sha256: '569871bd8ef90cf6fd7701ee35d9eb1f65f1759b515a0e22a8028a267c2fbd8b',
+  },
+];
 
 const paethPredictor = (left, up, upperLeft) => {
   const prediction = left + up - upperLeft;
@@ -151,6 +169,82 @@ test('the larger cartoon Mr. BB asset keeps the approved gray-blue-eyed black-T-
     createHash('sha256').update(hero).digest('hex'),
     'd4343778a84edf6b339918b4afedbe46d1b0d1b1ff099010c6c7abb81f042de9',
     'hero sprite must match the approved gray-blue eyes, black T-shirt, and brown-toe boots',
+  );
+});
+
+test('the four-frame Mr. BB run cycle stays transparent, approved, and preloaded', async () => {
+  const [gameSource, ...runSprites] = await Promise.all([
+    readProjectFile('src/game.js'),
+    ...RUN_SPRITES.map(({ path }) => readProjectAsset(path)),
+  ]);
+  const heroSources = gameSource.match(/const HERO_SOURCES = \[[\s\S]*?\n\];/)?.[0];
+
+  assert.ok(heroSources, 'game.js must declare the complete HERO_SOURCES preload list');
+  assert.match(heroSources, /\bHERO_SOURCE\b/, 'the approved idle Mr. BB sprite must remain first');
+  assert.deepEqual(
+    [...heroSources.matchAll(/assets\/(mr-bb-run-[^']+\.png)/g)].map((match) => match[1]),
+    RUN_SPRITES.map(({ path }) => path.split('/').at(-1)),
+    'run textures must stay in authored gait order: contact A, passing A, contact B, passing B',
+  );
+  assert.match(
+    gameSource,
+    /const HERO_SOURCE = new URL\('\.\.\/assets\/mr-bb-v2\.png', import\.meta\.url\)\.href/,
+  );
+
+  for (const [{ path, sha256 }, sprite] of RUN_SPRITES.map((definition, index) => [
+    definition,
+    runSprites[index],
+  ])) {
+    const filename = path.split('/').at(-1);
+    assert.match(heroSources, new RegExp(`assets/${filename}`), `${filename} must be preloaded`);
+    assert.deepEqual(
+      sprite.subarray(0, PNG_SIGNATURE.length),
+      PNG_SIGNATURE,
+      `${filename} must retain a valid PNG signature`,
+    );
+    assert.equal(sprite.readUInt32BE(16), 488, `${filename} must remain exactly 488px wide`);
+    assert.equal(sprite.readUInt32BE(20), 446, `${filename} must remain exactly 446px tall`);
+    assert.equal(sprite[24], 8, `${filename} must remain 8-bit`);
+    assert.equal(sprite[25], 6, `${filename} must retain a true RGBA alpha channel`);
+
+    const alphaStats = getRgbaPngAlphaStats(sprite);
+    assert.ok(
+      alphaStats.fullyTransparentPixels > alphaStats.pixelCount / 4,
+      `${filename} must keep substantial fully transparent exterior space`,
+    );
+    assert.deepEqual(
+      alphaStats.cornerAlphas,
+      [0, 0, 0, 0],
+      `${filename} must keep all four corners fully transparent`,
+    );
+    assert.ok(alphaStats.opaquePixels > 0, `${filename} must retain visible character pixels`);
+    assert.equal(
+      createHash('sha256').update(sprite).digest('hex'),
+      sha256,
+      `${filename} must match its approved run-cycle frame`,
+    );
+  }
+
+  assert.match(gameSource, /let heroTiles = \[\]/);
+  assert.match(
+    gameSource,
+    /heroTiles = \[[\s\S]*?heroTile,[\s\S]*?HERO_SOURCES\.slice\(1\)[\s\S]*?sourceIndex \+ 1[\s\S]*?\];/,
+    'every preloaded run texture must receive a matching hero tile',
+  );
+  assert.match(
+    gameSource,
+    /heroTiles\[getPlayerTextureIndex\(this\.animationState\)\]/,
+    'the player renderer must select from the run-cycle tiles',
+  );
+  assert.match(
+    gameSource,
+    /LJS\.engineInit\([\s\S]*?HERO_SOURCES,\s*gameStage\);/,
+    'LittleJS must preload the complete hero source list',
+  );
+  assert.doesNotMatch(
+    gameSource,
+    /LJS\.engineInit\([\s\S]*?\[HERO_SOURCE\],\s*gameStage\);/,
+    'the runtime must not fall back to preloading only the idle hero texture',
   );
 });
 

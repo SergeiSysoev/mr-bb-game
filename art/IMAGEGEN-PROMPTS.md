@@ -154,6 +154,180 @@ Avoid: brown or amber irises, blue shirt, navy shirt, collar, shirt buttons, lon
 
 The service again returned a baked checkerboard rather than alpha. A deterministic connected-background cleanup removed only the connected light neutral backdrop; the resulting character was then mechanically normalized to the approved footprint without a generative redraw.
 
+## Four-frame Mr. BB run cycle
+
+Mode: built-in `precise-object-edit` for every accepted frame, followed by deterministic local connected-background alpha cleanup and common mechanical normalization with `scripts/build-run-sprites.mjs`.
+
+- Generated: 2026-08-31 with OpenAI image generation through Codex
+- Frame order: contact A → passing A → contact B → passing B
+- Runtime behavior: traveled-distance animation only while grounded and moving; the approved `assets/mr-bb-v2.png` remains the idle, crouch, airborne, and non-playing texture
+- Project geometry: each frame is 488×446 RGBA; all four source canvases received one shared 458/1254 scale; only small documented horizontal root-alignment offsets were applied; no frame was generatively redrawn during cleanup
+- Alpha cleanup: only light neutral pixels connected to a source-canvas edge were removed; the remaining character pixels were encoded to RGBA and normalized with Lanczos scaling
+- Original identity/style reference for contact A and passing A: `assets/mr-bb-v2.png`
+- Final contact B input: accepted contact A ImageGen source `exec-63f0b280-9f97-4ced-9ec2-0b12392eab17.png`
+- Final passing B intermediate/input: `/Users/assistant/.codex/generated_images/01a058d1-07d8-70b2-afb0-1fd34fb31a16/exec-258023bd-180b-4a3a-9e4c-5533caf0b0c7.png`
+- Accepted ImageGen sources and project hashes:
+  - contact A source `exec-63f0b280-9f97-4ced-9ec2-0b12392eab17.png` → SHA-256 `4d884c963922662a322e2f4bd600ff97bd6f8ce9efae95b144a92b1c81fa5250`
+  - passing A source `exec-5620a25f-0b4a-43d6-8036-04223dcd7958.png` → SHA-256 `df8c53f21bc197cd31112e8ba1a33a9281c4d88d37243047f92b0de92fbcb638`
+  - contact B source `exec-5288da84-6637-489c-9761-2d22cee04032.png` → SHA-256 `7c3a868cecabee60d3b3b42e491993c2f580da101fe134c074a331c396959114`
+  - passing B source `exec-95312985-df5f-4a62-b9a3-164e85e8cda8.png` → SHA-256 `569871bd8ef90cf6fd7701ee35d9eb1f65f1759b515a0e22a8028a267c2fbd8b`
+
+### Contact A prompt
+
+~~~~text
+Use case: precise-object-edit
+Asset type: one transparent production frame for the original Mr. BB 2D platform-game run cycle — FRAME 1 OF 4, CONTACT A.
+
+Input image:
+- Image 1 is the exact identity, outfit, proportions, scale, rendering-style, lighting, and camera-angle anchor. Change only the full-body running pose.
+
+Primary request: Redraw Mr. BB in a clear right-facing CONTACT running pose. The boot at SCREEN RIGHT reaches well forward for a controlled heel strike on the virtual ground line. The other boot extends well behind toward SCREEN LEFT, lifting from the toe. Drive the OPPOSITE arm forward with its bent glove near SCREEN RIGHT while the other bent arm drives back toward SCREEN LEFT. Use natural contralateral running biomechanics, flexed knees, elbows around 85 degrees, and an 8-degree forward torso lean. Make the silhouette energetic and unmistakably different from a passing or airborne pose.
+
+Alignment: preserve the same nominal character scale as Image 1. Keep the head, hard hat, torso, and hip root stable and centered. Put the lowest boot sole at the same bottom ground baseline as Image 1. Preserve generous padding and the complete uncropped character.
+
+Absolute appearance invariants: same friendly original Mr. BB face and identity; completely bald scalp beneath the brown hard hat; cool gray-blue irises; light blond/beige eyebrows; subtle pale-blond short stubble; clean upper lip with no moustache; oversized cartoon head and compact body; plain solid-black short-sleeve crew-neck T-shirt without collar, placket, buttons, or blue fabric; orange/yellow safety vest; plain medium-blue jeans without knee pads or panels; fitted charcoal-gray/black gloves with tiny white "BB" where naturally visible; one black four-pocket front waist apron centered across the belly with the same generic tool handles and no side pouches; rich chestnut-brown leather across both entire boot uppers/toes, yellow laces, dark outsole only under the boots, no black toe caps.
+
+Style/medium: exact polished original 2D cartoon platform-game sprite style from Image 1, clean bold outlines, smooth dimensional shading, high contrast, original non-infringing mascot design.
+
+Composition/framing: exactly one full-body character, facing right, same three-quarter side camera, centered on a square canvas, no motion blur.
+
+Background: genuine transparent alpha. No baked checkerboard, white/gray background, floor, shadow, glow, prop, or scenery.
+
+Text (verbatim): only the tiny white "BB" glove mark where visible. No other text.
+
+Constraints: one anatomically complete character; exactly two arms, two hands, two legs, two boots; change only the pose; no logos or watermark.
+
+Avoid: duplicated/missing limbs, same-side arm-leg gait, ambiguous fused legs, changing head or torso size, outfit flicker, dark hair, dark eyebrows, beard, moustache, brown eyes, blue shirt, collar, buttons, long sleeves, knee pads, side pouches, tan gloves, black boot toes, red plumber clothing, blue overalls, white gloves, lettered cap, Mario/Nintendo resemblance, crop, checkerboard background.
+~~~~
+
+### Passing A prompt
+
+~~~~text
+Use case: precise-object-edit
+Asset type: one transparent production frame for the original Mr. BB 2D platform-game run cycle — FRAME 2 OF 4, PASSING A.
+
+Input image:
+- Image 1 is the exact identity, outfit, proportions, rendering style, lighting, and camera-angle anchor. Change only the full-body running pose.
+
+Primary request: Redraw Mr. BB in a clearly readable right-facing PASSING running pose. His weight-bearing boot is directly beneath the hips with the knee softly bent and the sole planted on the virtual ground. The other thigh swings forward toward SCREEN RIGHT with the knee raised high and the lower leg folded back, so the two legs form a compact, unmistakable passing silhouette rather than a wide split. Arms counter-swing naturally: the arm opposite the raised forward knee drives forward, while the other bent arm pulls behind the torso. Elbows remain bent around 85 degrees. Add a restrained 8-degree forward torso lean. This must look like the middle of a real run stride and be visibly different from a contact pose.
+
+Alignment: preserve the same nominal character scale as Image 1. Keep the head, hard hat, torso, and hip root stable and centered. Put the support-boot sole on the same bottom ground baseline as Image 1. Preserve generous padding and the complete uncropped character.
+
+Absolute appearance invariants: same friendly original Mr. BB face and identity; completely bald scalp beneath the brown hard hat; cool gray-blue irises; light blond/beige eyebrows; subtle pale-blond short stubble; clean upper lip with no moustache; oversized cartoon head and compact body; plain solid-black short-sleeve crew-neck T-shirt without collar, placket, buttons, or blue fabric; orange/yellow safety vest; plain medium-blue jeans without knee pads or panels; fitted charcoal-gray/black gloves with tiny white "BB" where naturally visible; one black four-pocket front waist apron centered across the belly with the same generic tool handles and no side pouches; rich chestnut-brown leather across both entire boot uppers/toes, yellow laces, dark outsole only under the boots, no black toe caps.
+
+Style/medium: exact polished original 2D cartoon platform-game sprite style from Image 1, clean bold outlines, smooth dimensional shading, high contrast, original non-infringing mascot design.
+
+Composition/framing: exactly one full-body character, facing right, same three-quarter side camera, centered on a square canvas, no motion blur.
+Background: genuine transparent alpha. No baked checkerboard, white/gray background, floor, shadow, glow, prop, or scenery.
+Text (verbatim): only the tiny white "BB" glove mark where visible. No other text.
+Constraints: one anatomically complete character; exactly two arms, two hands, two legs, two boots; change only the pose; no logos or watermark.
+Avoid: duplicated/missing limbs, same-side arm-leg gait, wide contact stride, ambiguous fused legs, changing head or torso size, outfit flicker, hair, dark eyebrows, beard, moustache, brown eyes, blue shirt, collar, buttons, long sleeves, knee pads, side pouches, tan gloves, black boot toes, red plumber clothing, blue overalls, white gloves, lettered cap, resemblance to any copyrighted game character, crop, checkerboard background.
+~~~~
+
+### Superseded contact B intermediary prompt
+
+~~~~text
+Use case: precise-object-edit
+Asset type: corrected production run-cycle frame for the original Mr. BB game — CONTACT B.
+
+Edit Image 1. Keep the exact character, face, outfit, right-facing direction, leg pose, scale, camera angle, lighting, and framing. Make one essential biomechanical correction: COMPLETELY REVERSE THE TWO ARM POSITIONS.
+
+Required arms:
+- The arm and glove currently on SCREEN LEFT must swing FORWARD across the side of the chest toward SCREEN RIGHT, elbow bent, with its fist clearly visible ahead of the torso.
+- The arm and glove currently on SCREEN RIGHT must swing BACK behind the torso toward SCREEN LEFT, elbow bent, with its fist beside or slightly behind the rear hip.
+- Do not leave the front raised fist on screen right. The new silhouette must visibly show the opposite arm phase from Image 1.
+- Preserve exactly two complete arms and two complete hands. Natural contralateral running biomechanics.
+
+Keep the current wide contact leg pose: the near leg reaches forward toward SCREEN RIGHT for heel contact; the far leg extends back toward SCREEN LEFT. Keep the head, torso, and hip root steady.
+
+Absolute appearance invariants: friendly original Mr. BB; completely bald; brown hard hat; cool gray-blue eyes; light eyebrows and pale-blond short stubble; no moustache; large cartoon head; black short-sleeve crew-neck T-shirt; orange/yellow safety vest; plain blue jeans without knee pads; charcoal-gray/black gloves with tiny white "BB"; centered black four-pocket front waist apron, no side pouches; chestnut-brown boot uppers and toes with yellow laces, dark outsole only beneath, no black toe caps.
+
+Background: genuine transparent alpha, no baked checkerboard, floor, shadow, glow, props, scenery, labels, borders, logo, or watermark.
+Composition: one full uncropped right-facing character centered on a square canvas with generous padding.
+Style: preserve the exact polished original 2D platform-game cartoon style. Original non-infringing mascot; no resemblance to copyrighted game characters.
+Avoid: keeping the same arm positions, both fists in front, both arms back, same-side arm-leg gait, extra/duplicate/missing limbs, fused anatomy, identity/outfit changes, hair, beard, moustache, brown eyes, blue shirt, knee pads, side bags, tan gloves, black toe caps, crop, checkerboard background.
+~~~~
+
+### Superseded passing B intermediary prompt
+
+~~~~text
+Use case: precise-object-edit
+Asset type: corrected production run-cycle frame for the original Mr. BB game — PASSING B / LIGHT FLIGHT.
+
+Edit Image 1. Keep the exact character, face, outfit, right-facing direction, leg pose, scale, camera angle, lighting, and framing. Make one essential biomechanical correction: COMPLETELY REVERSE THE TWO ARM POSITIONS.
+
+Required arms:
+- The arm and glove currently on SCREEN LEFT must swing FORWARD across the side of the chest toward SCREEN RIGHT, elbow bent, with its fist clearly visible ahead of the torso.
+- The arm and glove currently on SCREEN RIGHT must swing BACK behind the torso toward SCREEN LEFT, elbow bent, with its fist beside or slightly behind the rear hip.
+- Do not leave the front raised fist on screen right. The new silhouette must visibly show the opposite arm phase from Image 1.
+- Preserve exactly two complete arms and two complete hands. Natural contralateral running biomechanics.
+
+Keep the current running leg pose and make it a restrained light-flight recovery: near knee forward toward SCREEN RIGHT, far leg folded behind toward SCREEN LEFT, both boots only slightly above the virtual baseline. Keep the head, torso, and hip root steady.
+
+Absolute appearance invariants: friendly original Mr. BB; completely bald; brown hard hat; cool gray-blue eyes; light eyebrows and pale-blond short stubble; no moustache; large cartoon head; black short-sleeve crew-neck T-shirt; orange/yellow safety vest; plain blue jeans without knee pads; charcoal-gray/black gloves with tiny white "BB"; centered black four-pocket front waist apron, no side pouches; chestnut-brown boot uppers and toes with yellow laces, dark outsole only beneath, no black toe caps.
+
+Background: genuine transparent alpha, no baked checkerboard, floor, shadow, glow, props, scenery, labels, borders, logo, or watermark.
+Composition: one full uncropped right-facing character centered on a square canvas with generous padding.
+Style: preserve the exact polished original 2D platform-game cartoon style. Original non-infringing mascot; no resemblance to copyrighted game characters.
+Avoid: keeping the same arm positions, both fists in front, both arms back, same-side arm-leg gait, extra/duplicate/missing limbs, fused anatomy, identity/outfit changes, hair, beard, moustache, brown eyes, blue shirt, knee pads, side bags, tan gloves, black toe caps, high jump, crop, checkerboard background.
+~~~~
+
+The two intermediary B frames above were rejected during final phone-scale review because their screen silhouettes still read too similarly to the A half-cycle. They are not shipped.
+
+### Final opposite contact B prompt
+
+~~~~text
+Use case: precise-object-edit
+Asset type: production replacement for FRAME 3 OF 4 of the original Mr. BB game run cycle — OPPOSITE CONTACT B.
+
+Edit Image 1 as a strict opposite-stride partner to it. Preserve the exact Mr. BB head, hard hat, face, expression, torso, vest, shirt, waist apron, nominal scale, lighting, camera angle, canvas, head center, hip/root position, and ground baseline. Do not flip the whole character and do not move or resize the upper body.
+
+Essential opposite-limb pose:
+- The NEAR/FOREGROUND LEG must now extend BACK toward SCREEN LEFT, large and clearly visible in front, pushing off its toe.
+- The FAR/BACKGROUND LEG must reach FORWARD toward SCREEN RIGHT for heel contact, visibly narrower and about 12 percent darker blue, passing behind at the hip so it is unmistakably the other leg.
+- The NEAR/FOREGROUND ARM must now drive FORWARD toward SCREEN RIGHT, but LOW at waist/lower-rib height with the large glove clearly ahead of the torso.
+- The FAR/BACKGROUND ARM must pull BACK toward SCREEN LEFT, HIGHER near the rear ribs, slightly smaller and darker, clearly behind the torso.
+- This is natural contralateral running: the near leg trails while the near arm drives forward; the far leg leads while the far arm trails.
+- Make the two glove positions vertically and horizontally unmistakably different from Image 1: forward glove low and extended; rear glove high and tucked.
+- Preserve exactly two arms, two hands, two legs, and two boots.
+
+Motion: wide opposite contact stride, flexed knees, elbows 80–95 degrees, restrained 8-degree forward torso lean, no motion blur. The silhouette must read as the second footfall at about 100 pixels tall, not as the same Image 1 stride repeated.
+
+Absolute appearance invariants: same friendly original Mr. BB; completely bald scalp beneath the brown hard hat; cool gray-blue irises; light blond/beige eyebrows; subtle pale-blond short stubble; clean upper lip with no moustache; oversized cartoon head and compact body; plain solid-black short-sleeve crew-neck T-shirt with no collar, placket, buttons, or blue fabric; orange/yellow safety vest; plain medium-blue jeans with no knee pads or panels; fitted charcoal-gray/black gloves with tiny white "BB" where naturally visible; one centered black four-pocket front waist apron with the same generic tool handles and no side pouches; chestnut-brown leather across every boot upper and toe, yellow laces, dark outsole only beneath, no black toe caps.
+
+Style: preserve the exact polished original 2D platform-game cartoon style, bold clean outline, smooth dimensional shading, high contrast, original non-infringing mascot.
+Composition: exactly one complete uncropped character facing right, generous padding.
+Background: genuine transparent alpha; no baked checkerboard, floor, shadow, glow, scenery, label, border, logo, or watermark.
+Avoid: retaining Image 1's near/far limb assignment, both frames looking identical, same glove heights, same-side arm-leg gait, fused or duplicated limbs, changing head/torso size or position, outfit flicker, hair, beard, moustache, brown eyes, blue shirt, knee pads, side bags, tan gloves, black toe caps, red plumber clothes, white gloves, lettered cap, resemblance to any copyrighted game character, crop, checkerboard background.
+~~~~
+
+### Final passing B heel-kick prompt
+
+~~~~text
+Use case: precise-object-edit
+Asset type: final leg-pose correction for FRAME 4 OF 4 of the original Mr. BB run cycle — REAR HEEL-KICK PASSING B.
+
+Edit Image 1. Preserve the character's exact head, hard hat, face, identity, expression, torso, vest, black T-shirt, waist apron, BOTH ARMS AND BOTH GLOVES IN THEIR CURRENT POSITIONS, nominal scale, lighting, camera angle, canvas, head center, and hip/root position. Change only the two leg poses below.
+
+Required clearly different leg silhouette:
+- The NEAR/FOREGROUND LEG must fold sharply BACK toward SCREEN LEFT in a classic running heel-kick recovery. Its knee points down/back and its brown boot rises high behind the body, with the heel approaching the rear of the jeans/apron. This bent rear leg must be bright, large, and completely readable.
+- The FAR/BACKGROUND LEG must extend DOWN beneath and slightly FORWARD of the hips toward SCREEN RIGHT, much straighter than in Image 1, with its brown boot close to the virtual ground baseline. Make this far leg slightly narrower and about 12 percent darker blue.
+- Remove Image 1's high forward-knee silhouette. The new pose must not show a knee lifted in front of the waist.
+- Keep the two legs clearly separated at 100-pixel game size with no fused shapes.
+- Exactly two legs and two boots.
+
+This should look like the opposite passing/recovery beat between footfalls: one heel kicks high behind while the other leg reaches down under the body. It must be unmistakably different from the other passing frame, which has a high forward knee.
+
+Absolute appearance invariants: same friendly original Mr. BB; completely bald; brown hard hat; cool gray-blue eyes; light eyebrows; pale-blond short stubble; no moustache; plain black short-sleeve crew-neck T-shirt; orange/yellow safety vest; plain medium-blue jeans without knee pads; charcoal-gray/black gloves with tiny white "BB"; centered black four-pocket front waist apron, no side pouches; chestnut-brown leather across every boot upper and toe, yellow laces, dark outsole only beneath, no black toe caps.
+
+Background: genuine transparent alpha, no baked checkerboard, floor, shadow, glow, props, scenery, labels, border, logo, or watermark.
+Composition: one complete uncropped right-facing character with generous padding.
+Style: preserve the polished original 2D platform-game cartoon style, original non-infringing mascot.
+Avoid: changing the arms, gloves, head, torso, face, outfit, root, or scale; high forward knee; both knees forward; straight rear leg; fused/duplicate/missing limbs; hair, beard, moustache, brown eyes, blue shirt, knee pads, side bags, tan gloves, black toe caps, red plumber clothing, white gloves, lettered cap, resemblance to copyrighted game characters, crop, checkerboard background.
+~~~~
+
+The generator again returned RGB files with a baked light checkerboard. The accepted frames were therefore passed through the repository's deterministic connected-edge cleanup script. The script applies one shared source-to-output scale and explicit root-alignment offsets; it does not invent, repaint, or regenerate character pixels. Final alpha bounds end at source y=437 for every frame; detected hard-hat centers are x=270, 270.5, 267, and 267, keeping upper-body drift below one runtime pixel.
+
 ## `assets/mr-bb.png` — retired legacy sprite
 
 Status: retained only for provenance; the runtime must use `assets/mr-bb-v2.png`.

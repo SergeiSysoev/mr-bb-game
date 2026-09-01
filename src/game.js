@@ -24,6 +24,12 @@ import {
   getSwipeAction,
   reduceGestureIntent,
 } from './gesture-input.js';
+import {
+  createPlayerAnimationState,
+  getPlayerTextureIndex,
+  resetPlayerAnimation,
+  updatePlayerAnimation,
+} from './player-animation.js';
 
 const { vec2, rgb } = LJS;
 
@@ -31,6 +37,13 @@ const TOTAL_PARTS = PART_LAYOUT.length;
 const LEVEL_WIDTH = 54;
 const PLAYER_START = vec2(2.2, 2.1);
 const HERO_SOURCE = new URL('../assets/mr-bb-v2.png', import.meta.url).href;
+const HERO_SOURCES = [
+  HERO_SOURCE,
+  new URL('../assets/mr-bb-run-contact-a.png', import.meta.url).href,
+  new URL('../assets/mr-bb-run-passing-a.png', import.meta.url).href,
+  new URL('../assets/mr-bb-run-contact-b.png', import.meta.url).href,
+  new URL('../assets/mr-bb-run-passing-b.png', import.meta.url).href,
+];
 const GAMEPLAY_SCROLL_KEYS = new Set(['ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown', 'Space']);
 const MANUAL_MOVEMENT_KEYS = new Set(['ArrowLeft', 'ArrowRight', 'ArrowDown', 'KeyA', 'KeyD', 'KeyS']);
 const RUN_SPEED = 0.19;
@@ -88,6 +101,7 @@ const gestureFeedbackLabel = document.querySelector('#gesture-feedback-label');
 let gameState = createGameState(TOTAL_PARTS);
 let player;
 let heroTile;
+let heroTiles = [];
 let engineReady = false;
 let announcementTimer;
 let portraitOverride = false;
@@ -808,6 +822,7 @@ class Player extends LJS.EngineObject {
     this.invulnerableFrames = 0;
     this.mirror = false;
     this.crouching = false;
+    this.animationState = createPlayerAnimationState(pos.x);
     this.setCollision(true, false, false);
   }
 
@@ -836,6 +851,7 @@ class Player extends LJS.EngineObject {
     updateHud();
 
     if (gameState.status === 'lost') {
+      this.animationState = resetPlayerAnimation(this.pos.x);
       announce('No hard hats left.');
       showOverlay('SHIFT OVER', 'Mr. BB missed the deck. Reset the run and try a cleaner route.', 'TRY AGAIN');
       return;
@@ -844,6 +860,7 @@ class Player extends LJS.EngineObject {
     announce(tookDamage ? 'Watch the edge. One hard hat lost.' : 'Back on the deck.');
     this.pos = PLAYER_START.copy();
     this.velocity = vec2(0, 0.08);
+    this.animationState = resetPlayerAnimation(this.pos.x);
     this.invulnerableFrames = Math.max(this.invulnerableFrames, 90);
   }
 
@@ -858,6 +875,7 @@ class Player extends LJS.EngineObject {
     this.invulnerableFrames = 100;
     const direction = Math.sign(this.pos.x - hazard.pos.x) || 1;
     this.velocity = vec2(direction * 0.22, 0.24);
+    this.animationState = resetPlayerAnimation(this.pos.x);
 
     if (gameState.status === 'lost') {
       announce('No hard hats left.');
@@ -882,6 +900,13 @@ class Player extends LJS.EngineObject {
 
     if (gameState.status !== 'playing') {
       this.velocity.x *= 0.82;
+      this.animationState = updatePlayerAnimation(this.animationState, {
+        positionX: this.pos.x,
+        horizontalSpeed: this.velocity.x,
+        grounded: Boolean(this.groundObject),
+        crouching: this.crouching,
+        playing: false,
+      });
       return;
     }
 
@@ -951,16 +976,22 @@ class Player extends LJS.EngineObject {
     if (direction) {
       this.mirror = direction < 0;
     }
+
+    this.animationState = updatePlayerAnimation(this.animationState, {
+      positionX: this.pos.x,
+      horizontalSpeed: this.velocity.x,
+      grounded: grounded && this.velocity.y <= 0,
+      crouching: this.crouching,
+      playing: true,
+    });
   }
 
   render() {
-    const moving = Math.abs(this.velocity.x) > 0.02;
-    const bob = this.groundObject && moving && !this.crouching ? Math.sin(LJS.time * 15) * 0.045 : 0;
     const tint = this.invulnerableFrames > 0 && Math.floor(this.invulnerableFrames / 6) % 2 ? rgb(1, 1, 1, 0.25) : rgb(1, 1, 1);
     LJS.drawTile(
-      this.pos.add(vec2(0, (this.crouching ? 0.24 : 0.36) + bob)),
+      this.pos.add(vec2(0, this.crouching ? 0.24 : 0.36)),
       this.drawSize,
-      heroTile,
+      heroTiles[getPlayerTextureIndex(this.animationState)],
       tint,
       this.angle,
       this.mirror,
@@ -1066,6 +1097,12 @@ function gameInit() {
   LJS.setObjectDefaultAngleDamping(0.94);
   LJS.setCameraScale(60);
   heroTile = LJS.tile(vec2(0), vec2(488, 446), 0, 0, 0);
+  heroTiles = [
+    heroTile,
+    ...HERO_SOURCES.slice(1).map((_, sourceIndex) =>
+      LJS.tile(vec2(0), vec2(488, 446), sourceIndex + 1, 0, 0),
+    ),
+  ];
   setupWorld('intro');
 
   engineReady = true;
@@ -1145,4 +1182,4 @@ LJS.setInputPreventDefault(false);
 LJS.setTouchInputEnable(false);
 LJS.setTouchGamepadEnable(false);
 syncViewportLayout();
-LJS.engineInit(gameInit, gameUpdate, gameUpdatePost, gameRender, gameRenderPost, [HERO_SOURCE], gameStage);
+LJS.engineInit(gameInit, gameUpdate, gameUpdatePost, gameRender, gameRenderPost, HERO_SOURCES, gameStage);
