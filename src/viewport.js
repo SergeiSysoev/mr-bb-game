@@ -2,10 +2,6 @@ const DESKTOP_CANVAS = Object.freeze({ width: 960, height: 720 });
 const PHONE_MAX_HEIGHT = 560;
 const PHONE_MAX_SCREEN_MINOR_AXIS = 560;
 const COMPACT_MAX_WIDTH = 1000;
-const EMBEDDED_MAX_WIDTH = 1400;
-const MIN_LANDSCAPE_ASPECT = 4 / 3;
-const MAX_LANDSCAPE_ASPECT = 19.5 / 9;
-const MAX_EMBEDDED_LANDSCAPE_ASPECT = 3;
 
 function hasUsableDimensions(width, height) {
   return Number.isFinite(width) && Number.isFinite(height) && width > 0 && height > 0;
@@ -35,13 +31,28 @@ export function isPhoneLandscapeViewport(
   screenMinorAxis,
   embedded = false,
 ) {
-  return (
+  const isLandscapePhoneViewport =
     hasUsableDimensions(width, height) &&
     hasCoarsePointer &&
-    width > height &&
-    width <= (embedded ? EMBEDDED_MAX_WIDTH : COMPACT_MAX_WIDTH) &&
-    height <= PHONE_MAX_HEIGHT
-  );
+    width > height;
+
+  if (!isLandscapePhoneViewport) {
+    return false;
+  }
+
+  // Browser-toolbar, page-zoom, and VisualViewport dimensions can be much
+  // larger than the device's CSS screen. When physical screen geometry is
+  // available it is the stable phone signal on both the app-domain embed and
+  // standalone GitHub Pages; arbitrary viewport ceilings recreate side
+  // gutters. Only legacy callers without screen geometry use the old compact
+  // window fallback, while an embed can still use its short viewport edge.
+  if (Number.isFinite(screenMinorAxis) && screenMinorAxis > 0) {
+    return hasPhoneSizedScreen(width, height, screenMinorAxis);
+  }
+
+  return embedded
+    ? hasPhoneSizedScreen(width, height, screenMinorAxis)
+    : width <= COMPACT_MAX_WIDTH && height <= PHONE_MAX_HEIGHT;
 }
 
 export function isPhonePortraitViewport(width, height, hasCoarsePointer, screenMinorAxis) {
@@ -72,17 +83,11 @@ export function getGameCanvasSize(
     return { ...DESKTOP_CANVAS };
   }
 
-  const viewportAspect = width / height;
-  const maximumAspect = embedded
-    ? MAX_EMBEDDED_LANDSCAPE_ASPECT
-    : MAX_LANDSCAPE_ASPECT;
-  const canvasAspect = Math.min(
-    maximumAspect,
-    Math.max(MIN_LANDSCAPE_ASPECT, viewportAspect),
-  );
-
   return {
-    width: Math.round(DESKTOP_CANVAS.height * canvasAspect),
+    // Preserve the viewport aspect in the render buffer itself. CSS still
+    // stretches the canvas element to the stage, so capping this ratio would
+    // distort Mr. BB even when the element's bounding box looked full-width.
+    width: Math.round(DESKTOP_CANVAS.height * (width / height)),
     height: DESKTOP_CANVAS.height,
   };
 }

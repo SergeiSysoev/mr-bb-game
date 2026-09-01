@@ -309,14 +309,27 @@ test('the blocking game overlay exposes dialog semantics', async () => {
 
 test('landscape iPhones get a canvas matching their wide viewport', () => {
   assert.equal(isPhoneLandscapeViewport(852, 393, true, 393), true);
-  assert.deepEqual(getGameCanvasSize(852, 393, true, 393), { width: 1560, height: 720 });
-  assert.deepEqual(getGameCanvasSize(932, 430, true, 430), { width: 1560, height: 720 });
+  assert.deepEqual(getGameCanvasSize(852, 393, true, 393), { width: 1561, height: 720 });
+  assert.deepEqual(getGameCanvasSize(932, 430, true, 430), { width: 1561, height: 720 });
   assert.deepEqual(getGameCanvasSize(667, 375, true, 375), { width: 1281, height: 720 });
+  assert.deepEqual(getGameCanvasSize(932, 360, true, 430), { width: 1864, height: 720 });
 });
 
-test('embedded phone landscape follows the real browser viewport without stretching', () => {
-  assert.equal(isPhoneLandscapeViewport(1200, 513, true, 430), false);
+test('physical phone landscape follows the real browser viewport without stretching', () => {
+  assert.equal(isPhoneLandscapeViewport(1200, 513, true, 430), true);
   assert.equal(isPhoneLandscapeViewport(1200, 513, true, 430, true), true);
+  assert.equal(isPhoneLandscapeViewport(1232, 513, true, 430), true);
+  assert.equal(isPhoneLandscapeViewport(1232, 393, true, 430), true);
+  assert.equal(isPhoneLandscapeViewport(1600, 513, true, 430, true), true);
+  assert.equal(isPhoneLandscapeViewport(1600, 513, true, 820, true), false);
+  assert.deepEqual(getGameCanvasSize(1232, 513, true, 430), {
+    width: 1729,
+    height: 720,
+  });
+  assert.deepEqual(getGameCanvasSize(1232, 393, true, 430), {
+    width: 2257,
+    height: 720,
+  });
   assert.deepEqual(getGameCanvasSize(1200, 513, true, 430, true), {
     width: 1684,
     height: 720,
@@ -326,18 +339,42 @@ test('embedded phone landscape follows the real browser viewport without stretch
     height: 720,
   });
   assert.deepEqual(getGameCanvasSize(1400, 360, true, 430, true), {
-    width: 2160,
+    width: 2800,
+    height: 720,
+  });
+  assert.deepEqual(getGameCanvasSize(1232, 393, true, 430, true), {
+    width: 2257,
+    height: 720,
+  });
+  assert.deepEqual(getGameCanvasSize(1232, 360, true, 430, true), {
+    width: 2464,
+    height: 720,
+  });
+  assert.deepEqual(getGameCanvasSize(1401, 360, true, 430, true), {
+    width: 2802,
+    height: 720,
+  });
+  assert.deepEqual(getGameCanvasSize(1430, 393, true, 430, true), {
+    width: 2620,
+    height: 720,
+  });
+  assert.deepEqual(getGameCanvasSize(1600, 513, true, 430, true), {
+    width: 2246,
     height: 720,
   });
 });
 
-test('portrait phone classification stays narrow while compact landscape also fits iPad Split View', () => {
+test('portrait phone classification stays narrow while embedded iPad Split View stays framed', () => {
   assert.equal(isPhonePortraitViewport(390, 844, true, 390), true);
   assert.equal(isPhonePortraitViewport(820, 1180, true, 820), false);
   assert.equal(isPhonePortraitViewport(390, 1024, true, 820), false);
-  assert.equal(isPhoneLandscapeViewport(744, 520, true, 820), true);
-  assert.equal(isPhoneLandscapeViewport(744, 520, true, 820, true), true);
-  assert.deepEqual(getGameCanvasSize(744, 520, true, 820), { width: 1030, height: 720 });
+  assert.equal(isPhoneLandscapeViewport(744, 520, true, 820), false);
+  assert.equal(isPhoneLandscapeViewport(744, 520, true, 820, true), false);
+  assert.deepEqual(getGameCanvasSize(744, 520, true, 820), { width: 960, height: 720 });
+  assert.deepEqual(getGameCanvasSize(744, 520, true, 820, true), {
+    width: 960,
+    height: 720,
+  });
 });
 
 test('desktop and tablet layouts retain the original 4:3 canvas', () => {
