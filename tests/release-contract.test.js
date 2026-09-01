@@ -310,11 +310,29 @@ test('landscape iPhones get a canvas matching their wide viewport', () => {
   assert.deepEqual(getGameCanvasSize(667, 375, true, 375), { width: 1281, height: 720 });
 });
 
+test('embedded phone landscape follows the real browser viewport without stretching', () => {
+  assert.equal(isPhoneLandscapeViewport(1200, 513, true, 430), false);
+  assert.equal(isPhoneLandscapeViewport(1200, 513, true, 430, true), true);
+  assert.deepEqual(getGameCanvasSize(1200, 513, true, 430, true), {
+    width: 1684,
+    height: 720,
+  });
+  assert.deepEqual(getGameCanvasSize(734, 289, true, 393, true), {
+    width: 1829,
+    height: 720,
+  });
+  assert.deepEqual(getGameCanvasSize(1400, 360, true, 430, true), {
+    width: 2160,
+    height: 720,
+  });
+});
+
 test('iPhones gate in portrait while iPads and iPad Split View do not', () => {
   assert.equal(isPhonePortraitViewport(390, 844, true, 390), true);
   assert.equal(isPhonePortraitViewport(820, 1180, true, 820), false);
   assert.equal(isPhonePortraitViewport(390, 1024, true, 820), false);
   assert.equal(isPhoneLandscapeViewport(744, 520, true, 820), false);
+  assert.equal(isPhoneLandscapeViewport(744, 520, true, 820, true), false);
 });
 
 test('desktop and tablet layouts retain the original 4:3 canvas', () => {
@@ -356,6 +374,14 @@ test('embed mode is opt-in and keeps regular frames centered without changing ph
   assert.match(styles, /html\.is-embedded \.page[\s\S]*place-items:\s*center/);
   assert.match(styles, /html\.is-embedded \.stage-restart,[\s\S]*display:\s*grid/);
   assert.match(styles, /html\.is-phone-landscape \.game-shell,[\s\S]*height:\s*100%/);
+  assert.match(
+    styles,
+    /html\.is-embedded\.is-phone-landscape \.hud[\s\S]*padding-right:[\s\S]*padding-left:/,
+  );
+  assert.match(
+    gameSource,
+    /getGameCanvasSize\([\s\S]*screenMinorAxis,[\s\S]*isEmbedded,[\s\S]*\)/,
+  );
   assert.doesNotMatch(styles, /@media \(pointer:\s*coarse\)[^{]*max-width:\s*1000px/);
 });
 

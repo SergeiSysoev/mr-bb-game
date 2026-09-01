@@ -614,6 +614,16 @@ html.is-phone-landscape .hud {
     max(18px, calc(env(safe-area-inset-left) + 10px));
 }
 
+/* The AirOrchestra embed floats its own Back at the leading edge and keeps the
+   44 px Messenger launcher available at either saved edge. The game still
+   paints beneath those controls; only the three HUD labels move into lanes
+   where neither app control can cover them. The wider leading lane fits Back
+   plus Messenger when the launcher is saved at the start edge. */
+html.is-embedded.is-phone-landscape .hud {
+  padding-right: max(68px, calc(env(safe-area-inset-right) + 60px));
+  padding-left: max(116px, calc(env(safe-area-inset-left) + 108px));
+}
+
 html.is-phone-landscape .gesture-feedback {
   top: max(55px, calc(env(safe-area-inset-top) + 48px));
 }

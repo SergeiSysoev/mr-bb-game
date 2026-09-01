@@ -2,8 +2,10 @@ const DESKTOP_CANVAS = Object.freeze({ width: 960, height: 720 });
 const PHONE_MAX_HEIGHT = 560;
 const PHONE_MAX_SCREEN_MINOR_AXIS = 560;
 const COMPACT_MAX_WIDTH = 1000;
+const EMBEDDED_MAX_WIDTH = 1400;
 const MIN_LANDSCAPE_ASPECT = 4 / 3;
 const MAX_LANDSCAPE_ASPECT = 19.5 / 9;
+const MAX_EMBEDDED_LANDSCAPE_ASPECT = 3;
 
 function hasUsableDimensions(width, height) {
   return Number.isFinite(width) && Number.isFinite(height) && width > 0 && height > 0;
@@ -27,12 +29,13 @@ export function isPhoneLandscapeViewport(
   height,
   hasCoarsePointer,
   screenMinorAxis,
+  embedded = false,
 ) {
   return (
     hasPhoneSizedScreen(width, height, screenMinorAxis) &&
     hasCoarsePointer &&
     width > height &&
-    width <= COMPACT_MAX_WIDTH &&
+    width <= (embedded ? EMBEDDED_MAX_WIDTH : COMPACT_MAX_WIDTH) &&
     height <= PHONE_MAX_HEIGHT
   );
 }
@@ -46,14 +49,31 @@ export function isPhonePortraitViewport(width, height, hasCoarsePointer, screenM
   );
 }
 
-export function getGameCanvasSize(width, height, hasCoarsePointer, screenMinorAxis) {
-  if (!isPhoneLandscapeViewport(width, height, hasCoarsePointer, screenMinorAxis)) {
+export function getGameCanvasSize(
+  width,
+  height,
+  hasCoarsePointer,
+  screenMinorAxis,
+  embedded = false,
+) {
+  if (
+    !isPhoneLandscapeViewport(
+      width,
+      height,
+      hasCoarsePointer,
+      screenMinorAxis,
+      embedded,
+    )
+  ) {
     return { ...DESKTOP_CANVAS };
   }
 
   const viewportAspect = width / height;
+  const maximumAspect = embedded
+    ? MAX_EMBEDDED_LANDSCAPE_ASPECT
+    : MAX_LANDSCAPE_ASPECT;
   const canvasAspect = Math.min(
-    MAX_LANDSCAPE_ASPECT,
+    maximumAspect,
     Math.max(MIN_LANDSCAPE_ASPECT, viewportAspect),
   );
 

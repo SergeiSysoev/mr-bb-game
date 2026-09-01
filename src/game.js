@@ -336,6 +336,7 @@ function syncOrientationGate(width, height, coarsePointer, screenMinorAxis) {
     height,
     coarsePointer,
     screenMinorAxis,
+    isEmbedded,
   );
   documentRoot.classList.toggle('is-phone-landscape', isPhoneLandscape);
   if (isPhoneLandscape) {
@@ -376,7 +377,13 @@ function syncViewportLayout() {
   const { width, height } = getViewportDimensions();
   const coarsePointer = hasCoarsePointer();
   const screenMinorAxis = getScreenMinorAxis();
-  const canvasSize = getGameCanvasSize(width, height, coarsePointer, screenMinorAxis);
+  const canvasSize = getGameCanvasSize(
+    width,
+    height,
+    coarsePointer,
+    screenMinorAxis,
+    isEmbedded,
+  );
   const nextCanvasSize = `${canvasSize.width}x${canvasSize.height}`;
 
   if (nextCanvasSize !== lastCanvasSize) {
