@@ -105,8 +105,7 @@ let heroTile;
 let heroTiles = [];
 let engineReady = false;
 let engineStartPromise;
-let resolveEngineStart;
-let rejectEngineStart;
+let engineStartSignal;
 let announcementTimer;
 let viewportSyncFrame = 0;
 let lastCanvasSize = '';
@@ -1057,6 +1056,10 @@ function renderBackground() {
 }
 
 function gameInit() {
+  if (engineStartSignal?.aborted) {
+    throw new Error('Mr. BB startup was cancelled.');
+  }
+
   LJS.setGravity(vec2(0, -0.012));
   LJS.setObjectDefaultDamping(0.99);
   LJS.setObjectDefaultAngleDamping(0.94);
@@ -1072,7 +1075,6 @@ function gameInit() {
 
   engineReady = true;
   LJS.setPaused(true);
-  resolveEngineStart?.();
 }
 
 function gameUpdate() {
@@ -1136,9 +1138,13 @@ LJS.setInputPreventDefault(false);
 LJS.setTouchInputEnable(false);
 LJS.setTouchGamepadEnable(false);
 
-export function startGame() {
+export function startGame(signal) {
   if (engineStartPromise) {
     return engineStartPromise;
+  }
+
+  if (signal?.aborted) {
+    return Promise.reject(new Error('Mr. BB startup was cancelled.'));
   }
 
   const { width, height } = getViewportDimensions();
@@ -1146,39 +1152,28 @@ export function startGame() {
     return Promise.reject(new Error('Mr. BB starts only in landscape.'));
   }
 
-  engineStartPromise = new Promise((resolve, reject) => {
-    resolveEngineStart = resolve;
-    rejectEngineStart = reject;
-  });
-  const pendingStart = engineStartPromise;
-  const rejectPendingStart = (error) => {
-    rejectEngineStart?.(error);
-    if (engineStartPromise === pendingStart) {
-      resolveEngineStart = undefined;
-      rejectEngineStart = undefined;
-      engineReady = false;
-      gameStage.querySelectorAll('canvas').forEach((canvas) => canvas.remove());
-    }
-  };
-
-  try {
+  engineStartSignal = signal;
+  const pendingStart = (async () => {
     syncViewportLayout();
-    Promise.resolve(
-      LJS.engineInit(
-        gameInit,
-        gameUpdate,
-        gameUpdatePost,
-        gameRender,
-        gameRenderPost,
-        HERO_SOURCES,
-        gameStage,
-      ),
-    ).catch(rejectPendingStart);
-  } catch (error) {
-    rejectPendingStart(error);
-  }
-
-  return pendingStart;
+    await LJS.engineInit(
+      gameInit,
+      gameUpdate,
+      gameUpdatePost,
+      gameRender,
+      gameRenderPost,
+      HERO_SOURCES,
+      gameStage,
+    );
+    if (!engineReady) {
+      throw new Error('The Mr. BB engine did not become ready.');
+    }
+  })();
+  engineStartPromise = pendingStart.catch((error) => {
+    engineReady = false;
+    gameStage.querySelectorAll('canvas').forEach((canvas) => canvas.remove());
+    throw error;
+  });
+  return engineStartPromise;
 }
 
 export function activateGame() {

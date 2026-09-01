@@ -481,22 +481,40 @@ test('the explicit launch gate waits for START and touch play stays swipe-only',
     /launchStartButton\.addEventListener\('keydown',[\s\S]*event\.key === 'Enter'[\s\S]*event\.key === ' '/,
   );
   assert.match(launchSource, /await import\('\.\/game\.js'\)/);
+  assert.match(
+    launchSource,
+    /const startupController = new AbortController\(\)[\s\S]*?const game = await withTimeout\([\s\S]*?await import\('\.\/game\.js'\)[\s\S]*?startupController\.signal\.aborted[\s\S]*?await loadedGame\.startGame\(startupController\.signal\)[\s\S]*?START_TIMEOUT_MS[\s\S]*?startupController\.abort\(\)/,
+  );
   assert.match(launchSource, /documentRoot\.dataset\.mrBbLaunchReady = 'true'/);
   assert.match(launchSource, /launchSplashImage\.naturalWidth <= 0/);
   assert.match(launchSource, /ARTWORK_TIMEOUT_MS = 12000/);
+  assert.match(
+    launchSource,
+    /await withTimeout\([\s\S]*?await waitForArtworkLoad\(\)[\s\S]*?await launchSplashImage\.decode\(\)[\s\S]*?ARTWORK_TIMEOUT_MS/,
+  );
   assert.match(launchSource, /artworkFailed = true/);
   assert.match(launchSource, /COULD NOT LOAD THE JOBSITE\. REOPEN THE GAME TO TRY AGAIN\./);
   assert.match(launchSource, /startFailed = true/);
   assert.match(launchSource, /COULD NOT START THE JOBSITE\. REOPEN THE GAME TO TRY AGAIN\./);
   assert.match(launchSource, /!isLandscapeNow\(\)/);
-  assert.match(gameSource, /export function startGame\(\)/);
+  assert.match(gameSource, /export function startGame\(signal\)/);
   assert.match(gameSource, /export function activateGame\(\)/);
   assert.match(gameSource, /documentRoot\.dataset\.mrBbGamePaused = String\(gamePaused\)/);
   assert.match(gameSource, /LJS\.setPaused\(gamePaused\)/);
-  assert.match(gameSource, /Promise\.resolve\([\s\S]*?LJS\.engineInit\([\s\S]*?\.catch\(rejectPendingStart\)/);
+  assert.match(
+    gameSource,
+    /const pendingStart = \(async \(\) => \{[\s\S]*?await LJS\.engineInit\([\s\S]*?if \(!engineReady\)/,
+  );
+  assert.match(gameSource, /function gameInit\(\) \{[\s\S]*?engineStartSignal\?\.aborted/);
+  assert.match(gameSource, /export function startGame\(signal\)[\s\S]*?if \(signal\?\.aborted\)/);
+  assert.match(launchSource, /startupController\.abort\(\);[\s\S]*?launchAttempt \+= 1/);
+  assert.match(
+    gameSource,
+    /engineStartPromise = pendingStart\.catch\([\s\S]*?engineReady = false[\s\S]*?canvas\.remove\(\)/,
+  );
   assert.match(launchSource, /window\.clearTimeout\(timeoutId\)/);
   assert.equal((gameSource.match(/LJS\.engineInit\(/g) || []).length, 1);
-  const startFunctionIndex = gameSource.indexOf('export function startGame()');
+  const startFunctionIndex = gameSource.indexOf('export function startGame(signal)');
   const engineInitIndex = gameSource.indexOf('LJS.engineInit(');
   assert.ok(
     startFunctionIndex >= 0 && engineInitIndex > startFunctionIndex,

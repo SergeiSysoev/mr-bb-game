@@ -108,18 +108,24 @@ function waitForArtworkLoad() {
 
 async function prepareArtwork() {
   try {
-    await waitForArtworkLoad();
-    try {
-      await launchSplashImage.decode();
-    } catch {
-      if (launchSplashImage.naturalWidth <= 0) {
-        throw new Error('Launch artwork could not be decoded.');
-      }
-    }
+    await withTimeout(
+      (async () => {
+        await waitForArtworkLoad();
+        try {
+          await launchSplashImage.decode();
+        } catch {
+          if (launchSplashImage.naturalWidth <= 0) {
+            throw new Error('Launch artwork could not be decoded.');
+          }
+        }
 
-    if (launchSplashImage.naturalWidth <= 0) {
-      throw new Error('Launch artwork is empty.');
-    }
+        if (launchSplashImage.naturalWidth <= 0) {
+          throw new Error('Launch artwork is empty.');
+        }
+      })(),
+      ARTWORK_TIMEOUT_MS,
+      'Launch artwork took too long to prepare.',
+    );
 
     artworkReady = true;
     syncLaunchGate();
@@ -131,14 +137,14 @@ async function prepareArtwork() {
   }
 }
 
-function withStartTimeout(startPromise) {
+function withTimeout(promise, timeoutMs, timeoutMessage, onTimeout) {
   return new Promise((resolve, reject) => {
-    const timeoutId = window.setTimeout(
-      () => reject(new Error('The jobsite took too long to start.')),
-      START_TIMEOUT_MS,
-    );
+    const timeoutId = window.setTimeout(() => {
+      onTimeout?.();
+      reject(new Error(timeoutMessage));
+    }, timeoutMs);
 
-    Promise.resolve(startPromise).then(
+    Promise.resolve(promise).then(
       (value) => {
         window.clearTimeout(timeoutId);
         resolve(value);
@@ -164,19 +170,30 @@ async function startLaunch() {
   }
 
   const attempt = ++launchAttempt;
+  const startupController = new AbortController();
   setLaunchState('starting');
   syncLaunchGate();
 
   try {
-    const game = await import('./game.js');
-    if (attempt !== launchAttempt || !isLandscapeNow() || document.hidden) {
-      setLaunchState('waiting');
-      syncLaunchGate();
-      return;
-    }
-
-    await withStartTimeout(game.startGame());
-    if (attempt !== launchAttempt || !isLandscapeNow() || document.hidden) {
+    const game = await withTimeout(
+      (async () => {
+        const loadedGame = await import('./game.js');
+        if (
+          startupController.signal.aborted ||
+          attempt !== launchAttempt ||
+          !isLandscapeNow() ||
+          document.hidden
+        ) {
+          return undefined;
+        }
+        await loadedGame.startGame(startupController.signal);
+        return loadedGame;
+      })(),
+      START_TIMEOUT_MS,
+      'The jobsite took too long to start.',
+      () => startupController.abort(),
+    );
+    if (!game || attempt !== launchAttempt || !isLandscapeNow() || document.hidden) {
       setLaunchState('waiting');
       syncLaunchGate();
       return;
@@ -196,6 +213,8 @@ async function startLaunch() {
     launchSplash.inert = true;
   } catch {
     if (attempt === launchAttempt) {
+      startupController.abort();
+      launchAttempt += 1;
       startFailed = true;
       setLaunchState('error');
       syncLaunchGate();
