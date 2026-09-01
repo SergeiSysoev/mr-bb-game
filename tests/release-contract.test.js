@@ -120,16 +120,18 @@ test('the published build retains the LittleJS MIT notice', async () => {
   assert.match(publicLicense, /Permission is hereby granted/);
 });
 
-test('the larger cartoon Mr. BB asset keeps the approved front-apron outfit and real transparency', async () => {
+test('the larger cartoon Mr. BB asset keeps the approved gray-blue-eyed black-T-shirt outfit', async () => {
   const [markup, gameSource, hero] = await Promise.all([
     readProjectFile('index.html'),
     readProjectFile('src/game.js'),
     readProjectAsset('assets/mr-bb-v2.png'),
   ]);
 
-  assert.match(markup, /assets\/mr-bb-v2\.png/);
-  assert.match(markup, /Bald cartoon Mr\. BB with light eyebrows, light stubble/);
-  assert.match(markup, /plain blue jeans, dark gloves, and a black front waist tool apron/);
+  const heroTag = markup.match(/<img\b(?=[^>]*\bsrc="\/assets\/mr-bb-v2\.png")[^>]*>/s)?.[0];
+  assert.ok(heroTag, 'the game overlay must include the approved runtime hero image');
+  assert.match(heroTag, /Bald cartoon Mr\. BB with gray-blue eyes, light eyebrows, light stubble/);
+  assert.match(heroTag, /black short-sleeve T-shirt/);
+  assert.match(heroTag, /plain blue jeans, dark gloves, plain brown work boots, and a black front waist tool apron/);
   assert.match(gameSource, /HERO_SOURCE.*assets\/mr-bb-v2\.png/);
   assert.match(gameSource, /standingSize = vec2\(0\.68, 1\.03\)/);
   assert.match(gameSource, /standingDrawSize = vec2\(1\.92, 1\.75\)/);
@@ -147,20 +149,23 @@ test('the larger cartoon Mr. BB asset keeps the approved front-apron outfit and 
   assert.ok(alphaStats.opaquePixels > 0, 'hero PNG must retain visible character pixels');
   assert.equal(
     createHash('sha256').update(hero).digest('hex'),
-    '44636e90e652f9b0932b5a3a9f47d5d550f375f7e9f28a603e29f5d74e685699',
-    'hero sprite must match the approved plain-jeans, dark-gloves, front-apron artwork',
+    'd4343778a84edf6b339918b4afedbe46d1b0d1b1ff099010c6c7abb81f042de9',
+    'hero sprite must match the approved gray-blue eyes, black T-shirt, and brown-toe boots',
   );
 });
 
-test('the launch splash and social preview keep the approved front-apron tool-scatter artwork', async () => {
+test('the launch splash and social preview keep the approved gray-blue-eyed black-T-shirt artwork', async () => {
   const [markup, launchSplash, socialCard] = await Promise.all([
     readProjectFile('index.html'),
     readProjectAsset('assets/mr-bb-splash.png'),
     readProjectAsset('public/og.png'),
   ]);
 
-  assert.match(markup, /src="\/assets\/mr-bb-splash\.png"/);
-  assert.match(markup, /black front waist tool apron/);
+  const splashTag = markup.match(/<img\b(?=[^>]*\bid="launch-splash-image")[^>]*>/s)?.[0];
+  assert.ok(splashTag, 'the launch overlay must include the approved splash image');
+  assert.match(splashTag, /src="\/assets\/mr-bb-splash\.png"/);
+  assert.match(splashTag, /Bald gray-blue-eyed Mr\. BB in a black short-sleeve T-shirt/);
+  assert.match(splashTag, /black front waist tool apron/);
   assert.deepEqual(socialCard, launchSplash, 'launch splash and social card must stay byte-identical');
   for (const artwork of [launchSplash, socialCard]) {
     assert.equal(artwork.subarray(1, 4).toString('ascii'), 'PNG');
@@ -168,8 +173,8 @@ test('the launch splash and social preview keep the approved front-apron tool-sc
     assert.equal(artwork.readUInt32BE(20), 675);
     assert.equal(
       createHash('sha256').update(artwork).digest('hex'),
-      'e86f9c16a3350ebe8b2e5fb408f04c8af2a574481cb24f7f4ac3ea291fafa774',
-      'launch artwork must match the approved plain-jeans, dark-gloves, front-apron scene',
+      '32ac600f239f9a420eeb2be98566c7d967e4ef3d1794145cd57af152fd8ed7a3',
+      'launch artwork must match the approved gray-blue eyes and black T-shirt scene',
     );
   }
 });

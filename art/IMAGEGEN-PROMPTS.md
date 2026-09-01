@@ -10,12 +10,13 @@ Current revision modes: built-in `precise-object-edit`, built-in `background-ext
 - Generated: 2026-08-31 with OpenAI image generation through Codex
 - Revised: 2026-08-31 — bald head, light eyebrows, and subtle light stubble
 - Revised again: 2026-08-31 — plain blue denim jeans without knee pads, charcoal-gray gloves with small white `BB` marks, no side pouches, and one original black four-pocket tool apron centered across the front of the waist
-- Project file: the generated cutout received the documented connected-background alpha cleanup, was resized to 488×446, then was mechanically scaled and bottom-anchored to match the previous approved character footprint in the LittleJS texture
-- Project file SHA-256: `44636e90e652f9b0932b5a3a9f47d5d550f375f7e9f28a603e29f5d74e685699`
+- Eye/shirt/boot revision: 2026-08-31 — cool gray-blue irises, a plain black short-sleeve crew-neck T-shirt, and brown leather boot toes with no black caps
+- Project file: the latest generated cutout received the documented connected-background alpha cleanup, was mechanically scaled to the approved 375×436 character footprint, then padded to 488×446 and bottom-anchored at pixel y=437 in the LittleJS texture
+- Project file SHA-256: `d4343778a84edf6b339918b4afedbe46d1b0d1b1ff099010c6c7abb81f042de9`
 - Project usage: included by the project owner under this repository's MIT license
 - Structural reference only: the user-supplied `Photo 1.jpg` black waist-apron image and [Lowe's model 106668-BLKXL](https://www.lowes.com/pd/Carhartt-Men-s-Black-Canvas-Waist-Apron-X-Large-Adjustable-Strap-12-ounce-Cotton-Duck-Construction-4-Large-Pockets/5014783235); all brand marks and proprietary plaques were excluded from the original Mr. BB design
 
-The latest identity correction below supersedes the clean-shaven and dark-hair details in the original proportion prompt.
+The latest identity correction below supersedes the clean-shaven and dark-hair details in the original proportion prompt. The final eye/shirt/boot correction supersedes every older brown-eye and blue/navy-shirt detail while preserving the approved splash boots.
 
 ### Proportion redesign prompt
 
@@ -122,6 +123,37 @@ Avoid: any character redesign, old gray pants, tan gloves, side pouches, knee pa
 
 The image-generation service returned the final cutout with a baked light checkerboard in an RGB PNG despite the extraction prompt. The project sprite therefore received a deterministic, non-generative connected-light-background removal and RGBA encoding pass with Node and ffmpeg before its 488×446 resize. The character pixels were not redrawn during this cleanup.
 
+### Gray-blue eyes, black T-shirt, and brown-boots revision prompt
+
+```text
+Use case: precise-object-edit
+Asset type: transparent 2D game character sprite/cutout for the original Mr. BB HVAC platformer.
+
+Input images:
+- Image 1 is the exact edit target.
+
+Primary request: Make exactly three targeted appearance corrections to Mr. BB and leave everything else unchanged.
+
+Required edits:
+1. EYES: Change both visible irises from warm brown/amber to a clearly cool, desaturated light gray-blue. Preserve the exact eye shapes, black pupils, white sclera, catchlights, eyelids, gaze direction, and expression. The irises must read as gray-blue, not brown, hazel, green, or saturated royal blue.
+2. SHIRT: Replace the visible blue collared long-sleeve work shirt with a plain solid black short-sleeve crew-neck T-shirt worn underneath the existing orange/yellow safety vest. Remove every blue shirt area, collar, placket, and shirt buttons. The T-shirt sleeves must end above the elbows so both forearms remain naturally bare. Use black fabric with subtle charcoal highlights only for readable folds; no logo, print, pocket, or text.
+3. GAME BOOTS: Remove the black toe caps from both boots. Make the entire leather upper of each boot, including each toe and forefoot, a consistent rich chestnut-brown leather matching the rest of the boot. Keep the yellow laces. A thin dark-brown rugged outsole may remain only under the boot, but no black protective cap, black panel, or black material may wrap over either toe. The boots must read simply as brown work boots.
+
+Absolute invariants: Preserve the exact same friendly Mr. BB identity, completely bald scalp, light blond/beige eyebrows, subtle pale-blond short stubble, clean upper lip with no moustache, face, nose, ears, oversized cartoon head, compact body, right-facing running pose, anatomy, proportions, scale, exact crop and bottom anchor, brown hard hat, orange/yellow safety vest, plain blue denim jeans without knee pads or panels, charcoal-gray gloves with small white "BB" markings, black four-pocket front waist apron with tools, no side pouches, outlines, lighting, and transparent padding.
+
+Style/medium: preserve the exact polished original 2D cartoon platform-game sprite style and bold readable outline.
+
+Background: preserve genuine transparent alpha. Keep the full uncropped character and all existing padding.
+
+Text (verbatim): preserve only the existing small white "BB" on the gloves. No other text.
+
+Constraints: change only iris color, shirt garment/color/sleeve length, and boot toe color/material. No brand marks; no new objects; no logo; no watermark.
+
+Avoid: brown or amber irises, blue shirt, navy shirt, collar, shirt buttons, long sleeves, black toe caps, black toe panels, black boot uppers, altered face, altered vest, altered apron, altered jeans, side pouches, knee pads, tan gloves, dark head hair, dark eyebrows, beard, moustache, changed pose, changed proportions, cropped body, opaque background, checkerboard background, Mario/Nintendo resemblance, extra limbs.
+```
+
+The service again returned a baked checkerboard rather than alpha. A deterministic connected-background cleanup removed only the connected light neutral backdrop; the resulting character was then mechanically normalized to the approved footprint without a generative redraw.
+
 ## `assets/mr-bb.png` — retired legacy sprite
 
 Status: retained only for provenance; the runtime must use `assets/mr-bb-v2.png`.
@@ -177,8 +209,12 @@ Current revision mode: built-in `precise-object-edit`
 - Revised again: 2026-08-31 — removed the airborne mastic bucket and orange liquid; added flying screws and tools for the buttonless launch splash
 - Final title revision: 2026-08-31 — restored the clearly visible space in the exact title `MR. BB`
 - Outfit revision: 2026-08-31 — plain blue denim jeans without a knee pad, charcoal-gray gloves with small white `BB` marks, no side pouches, and one original black multi-pocket front waist apron
-- Project files: the same generated edit resized to 1200×675 for both the launch splash and social card
-- Project file SHA-256: `e86f9c16a3350ebe8b2e5fb408f04c8af2a574481cb24f7f4ac3ea291fafa774`
+- Eye/shirt revision: 2026-08-31 — cool gray-blue irises and a black short-sleeve shirt; the approved splash boots were preserved
+- Crew-neck correction: 2026-08-31 — full-splash attempts removed most blue fabric but retained work-shirt details; a final close-up ImageGen edit removed the collar, placket, and buttons and completed the plain black short-sleeve crew-neck T-shirt
+- Project files: the final ImageGen close-up was resized to the source crop's exact 160×160 geometry and feather-blended only into the shirt region at (670, 270); the completed 1200×675 splash and social card are byte-identical
+- Mechanical composite: pre-composite full-splash SHA-256 `8c1216564291d92cc9f2644c888383f96606836b3dc9c2bba753f893f3dfd200`; 160×160 patch; 160×160 grayscale mask with a white `118×120` rectangle at `(24, 12)` on black, Gaussian blur sigma `6`; overlay at `(670, 270)`; final output forced to RGB24
+- Final close-up ImageGen source: `/Users/assistant/.codex/generated_images/01a058d1-07d8-70b2-afb0-1fd34fb31a16/exec-1f436d51-d215-424b-a3c1-b067caf7d2ec.png`
+- Project file SHA-256: `32ac600f239f9a420eeb2be98566c7d967e4ef3d1794145cd57af152fd8ed7a3`
 - Project usage: included by the project owner under this repository's MIT license
 - Structural reference only: the user-supplied `Photo 1.jpg` black waist-apron image and [Lowe's model 106668-BLKXL](https://www.lowes.com/pd/Carhartt-Men-s-Black-Canvas-Waist-Apron-X-Large-Adjustable-Strap-12-ounce-Cotton-Duck-Construction-4-Large-Pockets/5014783235); all brand marks and proprietary plaques were excluded from the original Mr. BB design
 
@@ -282,4 +318,126 @@ Text (verbatim): Preserve the large title exactly once as "MR. BB" with a clearl
 Constraints: Change only pants, gloves, and tool storage. Original generic construction apparel only. No Carhartt name or logo; no trademarks; no side pouches; no knee pads; no tan gloves; no new airborne objects; no extra people; no watermark.
 
 Avoid: altered face or identity, dark head hair, dark eyebrows, beard, moustache, gray knee panels, cargo pants, hip holsters, side tool bags, brand marks, metal logo plaques, changed title spacing, misspelled or duplicate title, changed scene, changed ducts, bucket, orange liquid, Mario/Nintendo resemblance, red plumber clothing, cropped title, border, signature.
+```
+
+### Gray-blue eyes and black T-shirt splash revision prompt
+
+```text
+Use case: precise-object-edit
+Asset type: existing 16:9 landscape launch splash and social card for the original web game "Mr. BB — Duct Run".
+
+Input images:
+- Image 1 is the exact artwork edit target.
+
+Primary request: Make exactly two targeted appearance corrections to the running worker and leave everything else unchanged.
+
+Required edits:
+1. EYES: Change both visible irises from warm brown/amber to a clearly cool, desaturated light gray-blue. Preserve the exact eye shapes, black pupils, white sclera, catchlights, eyelids, gaze direction, and friendly expression. The irises must read as gray-blue, not brown, hazel, green, or saturated royal blue.
+2. SHIRT: Replace the visible navy/blue collared shirt with a plain solid black short-sleeve crew-neck T-shirt worn underneath the existing orange safety vest. Remove every blue shirt area, collar, placket, and shirt buttons. The T-shirt sleeves must end above the elbows so both forearms remain naturally bare. Use black fabric with subtle charcoal highlights only for folds and lighting; no logo, print, pocket, or text.
+
+Critical boot invariant: The boots in this splash are already correct. Preserve both existing brown work boots exactly as drawn, including their shape, brown leather, sole, perspective, lighting, and running position. Do not redesign, recolor, simplify, or move the splash boots.
+
+Character invariants: Preserve Mr. BB's exact identity, completely bald scalp under the brown hard hat, light blond/beige eyebrows, subtle pale-blond short stubble, clean upper lip with no moustache, face, nose, ears, body proportions, running pose, anatomy, brown hard hat, orange safety vest, plain blue denim jeans without knee pads, charcoal-gray gloves with small white "BB" marks, black multi-pocket front waist apron with tools, no side pouches, lighting, and shadows.
+
+Scene invariants: Preserve the exact 16:9 composition, HVAC construction site, every rectangular and spiral duct, perspective, camera angle, cinematic polished cartoon style, lighting, color palette, framing, crop, motion, every flying silver screw, tape measure, screwdriver, pliers, wrench, loose work glove, and motion trail. Keep no bucket and no orange mastic/liquid/paint/splash/droplets.
+
+Text (verbatim): Preserve the large title exactly once as "MR. BB" with a clearly visible normal space after the period, and preserve "DUCT RUN" exactly once. Keep both title areas fully legible, correctly spelled, unduplicated, and in their exact current positions and styles. Preserve only the existing tiny white "BB" markings on the worn gloves as additional clothing marks. No other text.
+
+Constraints: change only iris color and the shirt garment/color/sleeve details. No new objects; no extra people; no logos; no trademarks; no watermark.
+
+Avoid: brown or amber irises, blue or navy shirt, collar, shirt buttons, long sleeves, altered boots, black toe-cap edits on the splash boots, altered face, altered vest, altered apron, altered jeans, changed title spacing, misspelled or duplicate title, changed scene or ducts, bucket, orange liquid, Mario/Nintendo resemblance, cropped title, border, signature.
+```
+
+### First crew-neck correction prompt
+
+```text
+Use case: precise-object-edit
+Asset type: existing 16:9 landscape launch splash and social card for the original web game "Mr. BB — Duct Run".
+
+Input image:
+- Image 1 is the exact artwork edit target.
+
+Primary request: Correct ONLY the construction worker's black shirt neckline and front. It is currently a black collared polo/work shirt. Convert it into a plain solid-black SHORT-SLEEVE CREW-NECK T-SHIRT.
+
+Required shirt correction:
+- Completely remove both collar points and every trace of a folded collar.
+- Completely remove the vertical button placket, seam line, opening, and all shirt buttons.
+- Replace that area with one simple continuous black T-shirt chest and a smooth round crew neckline around the base of the neck.
+- Keep both short sleeves ending above the elbows and both forearms bare.
+- Keep the fabric black, with subtle charcoal highlights only for natural folds.
+- No pocket, logo, print, zipper, V-neck, polo collar, dress-shirt collar, placket, or buttons.
+
+Absolute pixel-preservation intent: Leave everything outside the black-shirt region unchanged as closely as possible.
+
+Character invariants: Preserve the exact same Mr. BB identity, clearly cool gray-blue irises, eye shapes, pupils, catchlights, completely bald scalp beneath the brown hard hat, light blond/beige eyebrows, subtle pale-blond stubble, clean upper lip with no moustache, face, expression, nose, ears, head/body proportions, running pose, anatomy, brown hard hat, orange safety vest, plain blue jeans, charcoal gloves with small white "BB", centered black front waist apron and tools, no side pouches, skin, lighting, and shadows.
+
+Critical boot invariant: Preserve both existing brown work boots exactly as currently drawn. Do not change their brown leather, toes, soles, shape, position, perspective, color, lighting, or detail.
+
+Scene invariants: Preserve the exact 16:9 composition, HVAC construction site, every rectangular and spiral duct, background, perspective, camera angle, framing, crop, lighting, palette, every flying screw, tape measure, screwdriver, pliers, wrench, loose glove, and motion trail. Keep no bucket and no orange mastic/liquid/paint/splash/droplets.
+
+Text (verbatim): Preserve the title exactly once as "MR. BB" with a visible normal space after the period, and "DUCT RUN" exactly once. Preserve the tiny white "BB" glove markings. No other text. Do not alter typography, spelling, position, scale, or spacing.
+
+Constraints: make only the collar/placket/button-to-crew-neck-T-shirt correction; no new objects, extra people, logos, trademarks, signature, border, or watermark.
+
+Avoid: any collar, collar points, polo shirt, work-shirt collar, dress-shirt collar, button placket, front buttons, blue or navy shirt, V-neck, altered eyes, brown or amber irises, altered boots, black toe-cap redesign, altered face, altered pose, changed title, changed tools, changed ducts, bucket, orange liquid, Mario/Nintendo resemblance.
+```
+
+This pass removed the folded collar but left tiny button/placket details. The final pass below removed those residual details.
+
+### Second full-splash crew-neck and button-removal prompt
+
+```text
+Use case: precise-object-edit
+Asset type: existing 16:9 Mr. BB game splash artwork.
+
+Input image:
+- Image 1 is the exact edit target.
+
+Edit ONLY the small visible black shirt area on the worker's upper chest and neckline. The current image still contains tiny circular buttons and a vertical center placket/seam. DELETE ALL OF THEM.
+
+Required final shirt:
+- A plain solid-black short-sleeve CREW-NECK T-SHIRT.
+- One smooth, continuous, uninterrupted black fabric surface on the chest.
+- One simple round ribbed crew neckline at the base of the neck.
+- Absolutely ZERO buttons: remove every tiny black or colored button dot from the chest.
+- Absolutely ZERO vertical placket, opening, zipper, center seam, polo construction, collar, collar points, lapels, pocket, logo, or print.
+- Keep sleeves short above both elbows and forearms bare.
+- Natural charcoal highlights may describe folds, but must not resemble buttons, seams, a placket, or an opening.
+
+Change nothing else. Preserve every other image element exactly as closely as possible: cool gray-blue irises; bald scalp; light brows; pale stubble; no moustache; brown hard hat; face/expression; orange vest; blue jeans; dark BB gloves; centered black front apron; both existing brown boots; running pose; all ducts; all tools and screws; lighting; composition; crop.
+
+Text (verbatim): Keep "MR. BB" exactly once with its visible space, and "DUCT RUN" exactly once. Do not change any title letter, punctuation, spacing, typography, size, or position.
+
+Keep no bucket and no orange mastic/liquid/paint/splash/droplets. No new objects, people, logos, signature, border, or watermark.
+
+Avoid above all: shirt buttons, button dots, placket, vertical shirt opening, collar, polo shirt, work shirt, dress shirt, V-neck, navy/blue shirt, altered boots, altered eyes, changed title.
+```
+
+The full-splash edit still retained faint work-shirt details at high magnification. The final accepted close-up edit below was performed on a 160×160 crop from (670, 270), enlarged to 1024×1024 for ImageGen. Its corrected shirt region was mechanically resized back to 160×160 and feather-blended into that exact location. Pixels outside the feathered local patch came from the approved full splash.
+
+### Accepted close-up crew-neck correction prompt
+
+```text
+Use case: precise localized object removal / inpainting
+Asset type: square close-up crop from an existing Mr. BB game splash.
+
+Image 1 is the exact edit target. It is a close-up of the worker's neck, black shirt, orange safety vest, glove, and tool apron.
+
+Primary request: Convert ONLY the visible black collared/buttoned shirt details into a plain black crew-neck T-shirt. This close-up clearly shows two folded triangular black collar points beside the neck, a faint vertical center placket, and three small tan/brown buttons stacked down the chest. Remove ALL of those specific details.
+
+Required edit:
+- Erase the left folded collar point completely.
+- Erase the right folded collar point completely.
+- Erase all three tan/brown circular buttons completely.
+- Erase the full vertical center placket/opening/seam completely.
+- Reconstruct the area as one smooth uninterrupted field of plain black T-shirt fabric.
+- Add/retain a simple round crew-neck edge that curves naturally and continuously around the base of the worker's neck.
+- Keep the T-shirt opaque black with only broad subtle charcoal shading for fabric volume.
+- No small circular marks, dots, snaps, holes, buttons, rivets, fasteners, seam, placket, opening, zipper, collar, collar points, lapels, V-neck, pocket, logo, or print anywhere on the black shirt.
+
+STRICT preservation: Keep the exact crop dimensions and framing. Preserve the worker's skin/neck/chin, pale stubble, orange safety vest and reflective stripes, black sleeve areas, dark glove with white BB, front apron/tools, background, lighting, pose, and every pixel outside the shirt neckline/chest as closely as possible.
+
+No new text or objects. No blue/navy fabric. No watermark.
+
+Success criterion: the visible black garment must unmistakably be a plain short-sleeve round crew-neck T-shirt, like a basic unbuttoned undershirt, with perfectly uninterrupted black fabric down the center.
 ```
