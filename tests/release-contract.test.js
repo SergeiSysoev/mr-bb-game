@@ -379,6 +379,16 @@ test('embed mode is opt-in and keeps regular frames centered without changing ph
     /html\.is-embedded\.is-phone-landscape \.hud[\s\S]*padding-right:[\s\S]*padding-left:/,
   );
   assert.match(
+    styles,
+    /--ao-embed-safe-left,\s*env\(safe-area-inset-left,\s*0px\)/,
+    'the same-origin app may bridge its measured notch inset into the embedded HUD',
+  );
+  assert.match(
+    styles,
+    /--ao-embed-safe-right,\s*env\(safe-area-inset-right,\s*0px\)/,
+    'the embedded HUD must retain standalone env() fallback at either landscape edge',
+  );
+  assert.match(
     gameSource,
     /getGameCanvasSize\([\s\S]*screenMinorAxis,[\s\S]*isEmbedded,[\s\S]*\)/,
   );
