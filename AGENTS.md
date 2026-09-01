@@ -6,7 +6,8 @@ Build and maintain a small, original HVAC construction platformer for the web.
 
 ## Product rules
 
-- Keep the game immediately playable on iPad, phone, and desktop.
+- Keep the launch artwork immediate on iPad, phone, and desktop, but require one explicit START activation before gameplay.
+- Keep gameplay landscape-only: portrait shows the same approved artwork before START or a rotate-only pause gate during play, with no portrait bypass.
 - Touch targets must be at least 44px and keyboard controls must remain available.
 - Keep the first level short: ten varied HVAC parts, falling construction hazards, three hard hats.
 - Keep Mr. BB bald with gray-blue eyes, light eyebrows, subtle light stubble, no moustache or full beard, and a brown hard hat.
@@ -20,8 +21,9 @@ Build and maintain a small, original HVAC construction platformer for the web.
 
 ## Architecture
 
-- `index.html` and `styles.css`: page, buttonless launch splash, HUD, end-state overlay, and gesture feedback.
-- `src/game.js`: LittleJS world, objects, rendering, input, and DOM integration.
+- `index.html` and `styles.css`: page, explicit landscape START gate, HUD, end-state overlay, and gesture feedback.
+- `src/launch.js`: lightweight artwork readiness, orientation state, and guarded dynamic game bootstrap.
+- `src/game.js`: LittleJS world, idempotent engine startup, objects, rendering, input, and DOM integration.
 - `src/player-animation.js`: pure traveled-distance run-cycle state and frame selection.
 - `src/game-logic.js`: pure scoring and life-state rules.
 - `src/level-data.js`: level-one part and hazard definitions and placements.

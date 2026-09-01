@@ -19,6 +19,14 @@ html {
   background: #091016;
 }
 
+html.is-launch-active,
+html.is-launch-active body {
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  overscroll-behavior: none;
+}
+
 body {
   margin: 0;
   min-width: 320px;
@@ -138,6 +146,31 @@ h1 span {
   transition: opacity 280ms ease, visibility 280ms ease;
 }
 
+.launch-splash::before {
+  position: absolute;
+  inset: -30px;
+  background:
+    linear-gradient(rgba(3, 8, 12, 0.58), rgba(3, 8, 12, 0.58)),
+    url("/assets/mr-bb-splash.png") center / cover no-repeat;
+  content: "";
+  filter: blur(18px) saturate(0.72);
+  transform: scale(1.08);
+}
+
+.launch-artwork-frame {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: min(100vw, 177.778dvh);
+  aspect-ratio: 16 / 9;
+  max-height: 100dvh;
+  overflow: hidden;
+  background: #050b0f;
+  filter: drop-shadow(0 24px 70px rgba(0, 0, 0, 0.55));
+  transform: translate(-50%, -50%);
+  transform-origin: center;
+}
+
 .launch-splash img {
   position: absolute;
   inset: 0;
@@ -145,7 +178,122 @@ h1 span {
   width: 100%;
   height: 100%;
   object-fit: contain;
-  filter: drop-shadow(0 24px 70px rgba(0, 0, 0, 0.55));
+}
+
+.launch-actions {
+  position: absolute;
+  z-index: 2;
+  bottom: max(
+    5.5%,
+    calc(var(--ao-embed-safe-bottom, env(safe-area-inset-bottom, 0px)) + 10px)
+  );
+  left: 29%;
+  display: grid;
+  justify-items: center;
+  width: min(34%, 280px);
+  gap: 7px;
+  transform: translateX(-50%);
+}
+
+#launch-orientation-status {
+  margin: 0;
+  padding: 5px 10px;
+  border-radius: 999px;
+  color: #fff;
+  background: rgba(4, 10, 14, 0.78);
+  box-shadow: 0 4px 18px rgba(0, 0, 0, 0.38);
+  font-size: clamp(0.54rem, 1.35vw, 0.76rem);
+  font-weight: 900;
+  letter-spacing: 0.09em;
+  line-height: 1.15;
+  text-align: center;
+  text-shadow: 0 2px 4px #000;
+}
+
+#launch-start-button {
+  width: clamp(154px, 22vw, 226px);
+  min-height: 54px;
+  padding: 0 24px;
+  border: 2px solid rgba(255, 255, 255, 0.58);
+  border-radius: 999px;
+  color: #171006;
+  background: linear-gradient(180deg, #ffe08a, var(--safety));
+  box-shadow: 0 6px 0 #965f00, 0 12px 30px rgba(0, 0, 0, 0.44);
+  font-size: clamp(0.94rem, 2.2vw, 1.22rem);
+  font-weight: 950;
+  letter-spacing: 0.12em;
+  cursor: pointer;
+  transition: filter 120ms ease, opacity 120ms ease, translate 80ms ease;
+}
+
+#launch-start-button:active:not(:disabled) {
+  translate: 0 3px;
+  box-shadow: 0 3px 0 #965f00, 0 7px 20px rgba(0, 0, 0, 0.42);
+}
+
+#launch-start-button:focus-visible {
+  outline: 4px solid #fff;
+  outline-offset: 4px;
+}
+
+#launch-start-button:disabled {
+  color: rgba(23, 16, 6, 0.72);
+  cursor: not-allowed;
+  filter: grayscale(0.72) brightness(0.72);
+  opacity: 0.7;
+}
+
+.launch-rotate-cue {
+  position: fixed;
+  z-index: 3;
+  bottom: max(
+    10px,
+    calc(var(--ao-embed-safe-bottom, env(safe-area-inset-bottom, 0px)) + 8px)
+  );
+  left: 50%;
+  display: none;
+  min-height: 44px;
+  align-items: center;
+  gap: 10px;
+  padding: 7px 13px;
+  border: 1px solid rgba(255, 212, 92, 0.44);
+  border-radius: 999px;
+  color: var(--safety-light);
+  background: rgba(4, 10, 14, 0.9);
+  box-shadow: 0 8px 26px rgba(0, 0, 0, 0.48);
+  font-size: 0.7rem;
+  letter-spacing: 0.08em;
+  transform: translateX(-50%);
+  white-space: nowrap;
+}
+
+.launch-phone-turn {
+  position: relative;
+  display: block;
+  width: 30px;
+  height: 19px;
+  rotate: -8deg;
+  border: 2px solid currentColor;
+  border-radius: 5px;
+}
+
+.launch-phone-turn::after {
+  position: absolute;
+  right: -12px;
+  bottom: -9px;
+  content: "↻";
+  font-size: 0.95rem;
+  font-weight: 950;
+}
+
+html.is-launch-portrait .launch-artwork-frame {
+  width: min(100dvh, 177.778dvw);
+  max-height: none;
+  transform: translate(-50%, -50%) rotate(90deg);
+}
+
+html.is-launch-portrait .launch-rotate-cue {
+  display: flex;
 }
 
 .launch-splash.is-hidden {
@@ -473,18 +621,6 @@ h1 span {
   content: "↻";
   font-size: 1.8rem;
   font-weight: 900;
-}
-
-#portrait-continue {
-  min-height: 44px;
-  padding: 0 18px;
-  border: 1px solid rgba(255, 255, 255, 0.2);
-  border-radius: 999px;
-  color: #dce5e9;
-  background: rgba(255, 255, 255, 0.07);
-  font-size: 0.74rem;
-  font-weight: 850;
-  letter-spacing: 0.06em;
 }
 
 .sr-only {

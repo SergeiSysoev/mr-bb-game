@@ -15,7 +15,7 @@ import {
 import {
   getGameCanvasSize,
   isPhoneLandscapeViewport,
-  isPhonePortraitViewport,
+  isLandscapeViewport,
 } from './viewport.js';
 import {
   SWIPE_PREVIEW_DISTANCE,
@@ -56,7 +56,6 @@ const JUMP_SPEED = 0.285;
 const HIGH_JUMP_SPEED = 0.39;
 const GESTURE_CROUCH_FRAMES = 45;
 const GESTURE_EDGE_GUARD = 18;
-const LAUNCH_SPLASH_MIN_MS = 1800;
 
 const colors = {
   deep: rgb(0.035, 0.07, 0.09),
@@ -90,12 +89,10 @@ const restartButtons = document.querySelectorAll('[data-action="restart"]');
 const stageRestartButton = document.querySelector('#stage-restart-button');
 const announcement = document.querySelector('#game-announcement');
 const gameStage = document.querySelector('#game-stage');
-const launchSplash = document.querySelector('#launch-splash');
-const launchSplashImage = document.querySelector('#launch-splash-image');
 const gameFooter = document.querySelector('.game-footer');
 const page = document.querySelector('.page');
 const orientationGate = document.querySelector('#orientation-gate');
-const portraitContinue = document.querySelector('#portrait-continue');
+const orientationTitle = document.querySelector('#orientation-title');
 const gestureTracker = document.querySelector('#gesture-tracker');
 const gestureTrackerIcon = document.querySelector('#gesture-tracker-icon');
 const gestureFeedback = document.querySelector('#gesture-feedback');
@@ -107,17 +104,16 @@ let player;
 let heroTile;
 let heroTiles = [];
 let engineReady = false;
+let engineStartPromise;
+let resolveEngineStart;
+let rejectEngineStart;
 let announcementTimer;
-let portraitOverride = false;
 let viewportSyncFrame = 0;
 let lastCanvasSize = '';
 let activeGesture = null;
 let gestureFeedbackTimer;
 let gestureCrouchFrames = 0;
 let gestureIntent = { direction: 0, sprint: false, crouching: false };
-let launchAssetReady = launchSplashImage.complete;
-let launchReadyAt = null;
-let launchTimer = 0;
 let initialRunStarted = false;
 
 const gestureJump = {
@@ -257,60 +253,6 @@ function syncPageInteractivity(orientationBlocked) {
   }
 }
 
-function clearLaunchTimer() {
-  window.clearTimeout(launchTimer);
-  launchTimer = 0;
-}
-
-function pauseInitialLaunch() {
-  if (initialRunStarted) {
-    return;
-  }
-
-  clearLaunchTimer();
-  launchReadyAt = null;
-}
-
-function completeInitialLaunch() {
-  launchTimer = 0;
-  if (initialRunStarted || document.hidden || !orientationGate.hidden) {
-    pauseInitialLaunch();
-    return;
-  }
-
-  initialRunStarted = true;
-  syncPageInteractivity(false);
-  launchSplash.classList.add('is-hidden');
-  launchSplash.setAttribute('aria-hidden', 'true');
-  launchSplash.inert = true;
-  beginRun();
-}
-
-function scheduleInitialRun() {
-  if (
-    initialRunStarted ||
-    !engineReady ||
-    !launchAssetReady ||
-    document.hidden ||
-    !orientationGate.hidden
-  ) {
-    return;
-  }
-
-  launchReadyAt ??= performance.now();
-  clearLaunchTimer();
-  const elapsed = performance.now() - launchReadyAt;
-  launchTimer = window.setTimeout(
-    completeInitialLaunch,
-    Math.max(0, LAUNCH_SPLASH_MIN_MS - elapsed),
-  );
-}
-
-function markLaunchAssetReady() {
-  launchAssetReady = true;
-  scheduleInitialRun();
-}
-
 function getViewportDimensions() {
   const viewport = window.visualViewport;
   return {
@@ -339,29 +281,25 @@ function syncOrientationGate(width, height, coarsePointer, screenMinorAxis) {
     isEmbedded,
   );
   documentRoot.classList.toggle('is-phone-landscape', isPhoneLandscape);
-  if (isPhoneLandscape) {
-    portraitOverride = false;
-  }
-
-  const shouldShowGate =
-    isPhonePortraitViewport(width, height, coarsePointer, screenMinorAxis) && !portraitOverride;
+  const orientationBlocked = !isLandscapeViewport(width, height);
+  const shouldShowGate = initialRunStarted && orientationBlocked;
+  const gamePaused = document.hidden || shouldShowGate || !initialRunStarted;
   const gateWasVisible = !orientationGate.hidden;
 
+  documentRoot.dataset.mrBbGamePaused = String(gamePaused);
   orientationGate.hidden = !shouldShowGate;
   orientationGate.setAttribute('aria-hidden', String(!shouldShowGate));
   syncPageInteractivity(shouldShowGate);
 
   if (shouldShowGate) {
     clearAllControls();
-    pauseInitialLaunch();
     if (!gateWasVisible) {
-      requestAnimationFrame(() => portraitContinue.focus({ preventScroll: true }));
+      requestAnimationFrame(() => orientationTitle.focus({ preventScroll: true }));
     }
   } else {
     if (gateWasVisible && orientationGate.contains(document.activeElement)) {
       document.activeElement.blur();
     }
-    scheduleInitialRun();
     if (gateWasVisible && engineReady && initialRunStarted) {
       requestAnimationFrame(() => {
         const focusTarget = overlay.classList.contains('is-hidden') ? gameStage : overlayAction;
@@ -370,7 +308,9 @@ function syncOrientationGate(width, height, coarsePointer, screenMinorAxis) {
     }
   }
 
-  LJS.setPaused(document.hidden || shouldShowGate);
+  if (engineReady) {
+    LJS.setPaused(gamePaused);
+  }
 }
 
 function syncViewportLayout() {
@@ -1131,7 +1071,8 @@ function gameInit() {
   setupWorld('intro');
 
   engineReady = true;
-  scheduleInitialRun();
+  LJS.setPaused(true);
+  resolveEngineStart?.();
 }
 
 function gameUpdate() {
@@ -1156,11 +1097,6 @@ function gameRender() {
 
 function gameRenderPost() {}
 
-if (!launchAssetReady) {
-  launchSplashImage.addEventListener('load', markLaunchAssetReady, { once: true });
-  launchSplashImage.addEventListener('error', markLaunchAssetReady, { once: true });
-}
-
 gameStage.addEventListener('pointerdown', handleGestureStart);
 gameStage.addEventListener('pointermove', handleGestureMove, { passive: false });
 gameStage.addEventListener('pointerup', (event) => finishGesture(event, true));
@@ -1168,10 +1104,6 @@ gameStage.addEventListener('pointercancel', (event) => finishGesture(event, fals
 gameStage.addEventListener('lostpointercapture', (event) => finishGesture(event, false));
 overlayAction.addEventListener('click', beginRun);
 restartButtons.forEach((button) => button.addEventListener('click', restartRun));
-portraitContinue.addEventListener('click', () => {
-  portraitOverride = true;
-  syncViewportLayout();
-});
 window.addEventListener('blur', clearAllControls);
 window.addEventListener('resize', scheduleViewportSync);
 window.addEventListener('orientationchange', scheduleViewportSync);
@@ -1180,9 +1112,6 @@ screen.orientation?.addEventListener('change', scheduleViewportSync);
 document.addEventListener('visibilitychange', () => {
   if (document.hidden) {
     clearAllControls();
-    pauseInitialLaunch();
-  } else {
-    scheduleInitialRun();
   }
   syncViewportLayout();
 });
@@ -1206,5 +1135,66 @@ LJS.setCanvasPixelated(false);
 LJS.setInputPreventDefault(false);
 LJS.setTouchInputEnable(false);
 LJS.setTouchGamepadEnable(false);
-syncViewportLayout();
-LJS.engineInit(gameInit, gameUpdate, gameUpdatePost, gameRender, gameRenderPost, HERO_SOURCES, gameStage);
+
+export function startGame() {
+  if (engineStartPromise) {
+    return engineStartPromise;
+  }
+
+  const { width, height } = getViewportDimensions();
+  if (!isLandscapeViewport(width, height) || document.hidden) {
+    return Promise.reject(new Error('Mr. BB starts only in landscape.'));
+  }
+
+  engineStartPromise = new Promise((resolve, reject) => {
+    resolveEngineStart = resolve;
+    rejectEngineStart = reject;
+  });
+  const pendingStart = engineStartPromise;
+  const rejectPendingStart = (error) => {
+    rejectEngineStart?.(error);
+    if (engineStartPromise === pendingStart) {
+      resolveEngineStart = undefined;
+      rejectEngineStart = undefined;
+      engineReady = false;
+      gameStage.querySelectorAll('canvas').forEach((canvas) => canvas.remove());
+    }
+  };
+
+  try {
+    syncViewportLayout();
+    Promise.resolve(
+      LJS.engineInit(
+        gameInit,
+        gameUpdate,
+        gameUpdatePost,
+        gameRender,
+        gameRenderPost,
+        HERO_SOURCES,
+        gameStage,
+      ),
+    ).catch(rejectPendingStart);
+  } catch (error) {
+    rejectPendingStart(error);
+  }
+
+  return pendingStart;
+}
+
+export function activateGame() {
+  const { width, height } = getViewportDimensions();
+  if (
+    !engineReady ||
+    initialRunStarted ||
+    !isLandscapeViewport(width, height) ||
+    document.hidden
+  ) {
+    return false;
+  }
+
+  initialRunStarted = true;
+  syncPageInteractivity(false);
+  beginRun();
+  syncViewportLayout();
+  return true;
+}

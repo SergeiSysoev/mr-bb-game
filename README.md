@@ -4,7 +4,10 @@ A small browser platformer set on an HVAC construction site. Run and jump with a
 
 Play: <https://sergeisysoev.github.io/mr-bb-game/>
 
-The game opens with a short buttonless Mr. BB splash, then starts the run automatically.
+The game always opens on the Mr. BB artwork and waits for an explicit **START**. On a phone,
+START is available only in landscape; portrait keeps the horizontal poster visible but does not
+offer a portrait-play bypass. Turning the phone upright during a run pauses play until it is
+sideways again.
 
 ## Controls
 
@@ -13,6 +16,7 @@ The game opens with a short buttonless Mr. BB splash, then starts the run automa
 - Crouch: `S` or `Arrow Down`
 - iPhone swipe: right to auto-run, left to go back, up to jump, and down to crouch and stop
 - iPhone double swipe: up for a high jump or right for sprint
+- Start: turn the phone sideways, then press **START** on the opening artwork
 - The iPhone playfield is swipe-only, with no on-screen movement buttons and no control-selection screen
 - Restart: `R` or the **Restart run** button
 

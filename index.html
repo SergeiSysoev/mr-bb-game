@@ -44,16 +44,45 @@
     <link rel="stylesheet" href="/styles.css" />
   </head>
   <body>
-    <div id="launch-splash" class="launch-splash" aria-label="Mr. BB Duct Run launch artwork">
-      <img
-        id="launch-splash-image"
-        src="/assets/mr-bb-splash.png"
-        alt="Bald gray-blue-eyed Mr. BB in a black short-sleeve T-shirt, plain blue jeans, dark gloves, and a black front waist tool apron rushing through an HVAC jobsite while screws and tools scatter behind him"
-        width="1200"
-        height="675"
-        decoding="async"
-        fetchpriority="high"
-      />
+    <div
+      id="launch-splash"
+      class="launch-splash"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="launch-title"
+      aria-describedby="launch-orientation-status"
+      aria-busy="true"
+    >
+      <h1 id="launch-title" class="sr-only">Mr. BB Duct Run</h1>
+      <div class="launch-artwork-frame">
+        <img
+          id="launch-splash-image"
+          src="/assets/mr-bb-splash.png"
+          alt="Mr. BB rushing through an HVAC jobsite while screws and tools scatter behind him"
+          width="1200"
+          height="675"
+          decoding="async"
+          fetchpriority="high"
+        />
+        <div class="launch-actions">
+          <p id="launch-orientation-status" role="status" aria-live="polite">
+            LOADING THE JOBSITE…
+          </p>
+          <button
+            id="launch-start-button"
+            type="button"
+            aria-label="Start Mr. BB Duct Run"
+            aria-describedby="launch-orientation-status"
+            disabled
+          >
+            START
+          </button>
+        </div>
+      </div>
+      <div id="launch-rotate-cue" class="launch-rotate-cue" aria-hidden="true">
+        <span class="launch-phone-turn"><span></span></span>
+        <strong>TURN PHONE SIDEWAYS</strong>
+      </div>
     </div>
 
     <main class="page" aria-hidden="true" inert>
@@ -152,12 +181,11 @@
       <div class="orientation-card">
         <div class="phone-turn" aria-hidden="true"><span></span></div>
         <p class="overlay-kicker">LANDSCAPE MODE</p>
-        <h2 id="orientation-title">TURN YOUR PHONE</h2>
+        <h2 id="orientation-title" tabindex="-1">TURN YOUR PHONE</h2>
         <p id="orientation-copy">Rotate it sideways to see the full jobsite and swipe to move.</p>
-        <button id="portrait-continue" type="button">PLAY IN PORTRAIT</button>
       </div>
     </aside>
 
-    <script type="module" src="/src/game.js"></script>
+    <script type="module" src="/src/launch.js"></script>
   </body>
 </html>

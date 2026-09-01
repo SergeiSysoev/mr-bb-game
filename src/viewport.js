@@ -11,6 +11,10 @@ function hasUsableDimensions(width, height) {
   return Number.isFinite(width) && Number.isFinite(height) && width > 0 && height > 0;
 }
 
+export function isLandscapeViewport(width, height) {
+  return hasUsableDimensions(width, height) && width > height;
+}
+
 function resolveScreenMinorAxis(width, height, screenMinorAxis) {
   return Number.isFinite(screenMinorAxis) && screenMinorAxis > 0
     ? screenMinorAxis
@@ -32,7 +36,7 @@ export function isPhoneLandscapeViewport(
   embedded = false,
 ) {
   return (
-    hasPhoneSizedScreen(width, height, screenMinorAxis) &&
+    hasUsableDimensions(width, height) &&
     hasCoarsePointer &&
     width > height &&
     width <= (embedded ? EMBEDDED_MAX_WIDTH : COMPACT_MAX_WIDTH) &&

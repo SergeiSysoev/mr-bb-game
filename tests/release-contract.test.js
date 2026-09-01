@@ -5,6 +5,7 @@ import test from 'node:test';
 import { inflateSync } from 'node:zlib';
 import {
   getGameCanvasSize,
+  isLandscapeViewport,
   isPhoneLandscapeViewport,
   isPhonePortraitViewport,
 } from '../src/viewport.js';
@@ -238,7 +239,7 @@ test('the four-frame Mr. BB run cycle stays transparent, approved, and preloaded
   );
   assert.match(
     gameSource,
-    /LJS\.engineInit\([\s\S]*?HERO_SOURCES,\s*gameStage\);/,
+    /LJS\.engineInit\([\s\S]*?HERO_SOURCES,\s*gameStage,\s*\)/,
     'LittleJS must preload the complete hero source list',
   );
   assert.doesNotMatch(
@@ -258,8 +259,7 @@ test('the launch splash and social preview keep the approved gray-blue-eyed blac
   const splashTag = markup.match(/<img\b(?=[^>]*\bid="launch-splash-image")[^>]*>/s)?.[0];
   assert.ok(splashTag, 'the launch overlay must include the approved splash image');
   assert.match(splashTag, /src="\/assets\/mr-bb-splash\.png"/);
-  assert.match(splashTag, /Bald gray-blue-eyed Mr\. BB in a black short-sleeve T-shirt/);
-  assert.match(splashTag, /black front waist tool apron/);
+  assert.match(splashTag, /Mr\. BB rushing through an HVAC jobsite/);
   assert.deepEqual(socialCard, launchSplash, 'launch splash and social card must stay byte-identical');
   for (const artwork of [launchSplash, socialCard]) {
     assert.equal(artwork.subarray(1, 4).toString('ascii'), 'PNG');
@@ -297,10 +297,14 @@ test('GitHub Pages keeps the repository path prefix', async () => {
 
 test('the blocking game overlay exposes dialog semantics', async () => {
   const markup = await readProjectFile('index.html');
-  assert.match(markup, /role="dialog"/);
-  assert.match(markup, /aria-modal="true"/);
-  assert.match(markup, /aria-labelledby="overlay-title"/);
-  assert.match(markup, /id="game-overlay"[\s\S]*class="game-overlay is-hidden"[\s\S]*aria-hidden="true"[\s\S]*inert/);
+  const gameOverlayTag = markup.match(/<div\s+id="game-overlay"[\s\S]*?>/)?.[0];
+  assert.ok(gameOverlayTag, 'the blocking game overlay must exist');
+  assert.match(gameOverlayTag, /class="game-overlay is-hidden"/);
+  assert.match(gameOverlayTag, /role="dialog"/);
+  assert.match(gameOverlayTag, /aria-modal="true"/);
+  assert.match(gameOverlayTag, /aria-labelledby="overlay-title"/);
+  assert.match(gameOverlayTag, /aria-hidden="true"/);
+  assert.match(gameOverlayTag, /\binert\b/);
 });
 
 test('landscape iPhones get a canvas matching their wide viewport', () => {
@@ -327,19 +331,20 @@ test('embedded phone landscape follows the real browser viewport without stretch
   });
 });
 
-test('iPhones gate in portrait while iPads and iPad Split View do not', () => {
+test('portrait phone classification stays narrow while compact landscape also fits iPad Split View', () => {
   assert.equal(isPhonePortraitViewport(390, 844, true, 390), true);
   assert.equal(isPhonePortraitViewport(820, 1180, true, 820), false);
   assert.equal(isPhonePortraitViewport(390, 1024, true, 820), false);
-  assert.equal(isPhoneLandscapeViewport(744, 520, true, 820), false);
-  assert.equal(isPhoneLandscapeViewport(744, 520, true, 820, true), false);
+  assert.equal(isPhoneLandscapeViewport(744, 520, true, 820), true);
+  assert.equal(isPhoneLandscapeViewport(744, 520, true, 820, true), true);
+  assert.deepEqual(getGameCanvasSize(744, 520, true, 820), { width: 1030, height: 720 });
 });
 
 test('desktop and tablet layouts retain the original 4:3 canvas', () => {
   assert.deepEqual(getGameCanvasSize(852, 393, false), { width: 960, height: 720 });
   assert.deepEqual(getGameCanvasSize(1440, 900, false), { width: 960, height: 720 });
   assert.deepEqual(getGameCanvasSize(820, 1180, true, 820), { width: 960, height: 720 });
-  assert.deepEqual(getGameCanvasSize(744, 520, true, 820), { width: 960, height: 720 });
+  assert.deepEqual(getGameCanvasSize(1024, 744, true, 820), { width: 960, height: 720 });
 });
 
 test('legacy three-argument viewport calls retain their prior fallback behavior', () => {
@@ -366,10 +371,7 @@ test('embed mode is opt-in and keeps regular frames centered without changing ph
     gameSource,
     /documentRoot\.classList\.toggle\('is-phone-landscape', isPhoneLandscape\)/,
   );
-  assert.match(
-    gameSource,
-    /portraitContinue\.addEventListener\('click', \(\) => \{[\s\S]*portraitOverride = true;[\s\S]*syncViewportLayout\(\);/,
-  );
+  assert.doesNotMatch(gameSource, /portraitContinue|portraitOverride|PLAY IN PORTRAIT/);
   assert.match(styles, /html\.is-embedded \.brand-bar,[\s\S]*html\.is-embedded \.game-footer/);
   assert.match(styles, /html\.is-embedded \.page[\s\S]*place-items:\s*center/);
   assert.match(styles, /html\.is-embedded \.stage-restart,[\s\S]*display:\s*grid/);
@@ -407,12 +409,15 @@ test('the mobile release contract includes landscape and safe-area support', asy
   assert.match(markup, /viewport-fit=cover/);
   assert.match(markup, /rel="manifest"/);
   assert.match(markup, /id="orientation-gate"/);
-  assert.match(markup, /id="portrait-continue"/);
+  assert.match(markup, /id="launch-start-button"/);
+  assert.match(markup, /id="launch-orientation-status"/);
+  assert.match(markup, /id="launch-rotate-cue"/);
+  assert.doesNotMatch(markup, /id="portrait-continue"|PLAY IN PORTRAIT/);
   assert.match(styles, /html\.is-phone-landscape/);
   assert.match(styles, /safe-area-inset-left/);
   assert.match(styles, /safe-area-inset-right/);
   assert.match(styles, /safe-area-inset-bottom/);
-  assert.match(gameSource, /isPhonePortraitViewport/);
+  assert.match(gameSource, /isLandscapeViewport/);
   assert.match(gameSource, /visualViewport/);
   assert.equal(manifest.orientation, 'landscape');
   assert.equal(manifest.display, 'standalone');
@@ -420,19 +425,22 @@ test('the mobile release contract includes landscape and safe-area support', asy
   assert.equal(manifest.icons[0].src, './mr-bb-icon.svg');
 });
 
-test('the launch is buttonless and touch play is swipe-only', async () => {
-  const [markup, styles, gameSource] = await Promise.all([
+test('the explicit launch gate waits for START and touch play stays swipe-only', async () => {
+  const [markup, styles, launchSource, gameSource] = await Promise.all([
     readProjectFile('index.html'),
     readProjectFile('styles.css'),
+    readProjectFile('src/launch.js'),
     readProjectFile('src/game.js'),
   ]);
-  const splashMarkup = markup.match(/<div id="launch-splash"[\s\S]*?<\/div>/)?.[0];
+  const splashMarkup = markup.match(/<div\s+[^>]*id="launch-splash"[\s\S]*?<\/div>/)?.[0];
 
   assert.ok(splashMarkup, 'launch splash markup must exist');
   assert.match(splashMarkup, /id="launch-splash-image"/);
-  assert.doesNotMatch(splashMarkup, /<button/);
+  assert.match(splashMarkup, /id="launch-orientation-status"/);
+  assert.match(splashMarkup, /id="launch-start-button"[\s\S]*disabled[\s\S]*>\s*START\s*<\/button>/);
   assert.match(markup, /<main class="page" aria-hidden="true" inert>/);
-  assert.doesNotMatch(markup, /READY, MR\. BB\?|START RUN|USE TAP CONTROLS/);
+  assert.match(markup, /<script type="module" src="\/src\/launch\.js"><\/script>/);
+  assert.doesNotMatch(markup, /PLAY IN PORTRAIT|portrait-continue/);
   assert.match(markup, /swipe right to run, left to go back, up to jump, or down to crouch/i);
   assert.match(markup, /Swipe up twice for a high jump or right twice to sprint/);
   assert.doesNotMatch(markup, /class="touch-controls"/);
@@ -446,6 +454,9 @@ test('the launch is buttonless and touch play is swipe-only', async () => {
   assert.match(styles, /#game-stage[^{]*\{[^}]*touch-action:\s*none/s);
   assert.match(styles, /\.launch-splash[^{]*\{[^}]*position:\s*fixed/s);
   assert.match(styles, /\.launch-splash img[^{]*\{[^}]*object-fit:\s*contain/s);
+  assert.match(styles, /#launch-start-button[^{]*\{[^}]*min-height:\s*54px/s);
+  assert.match(styles, /html\.is-launch-portrait \.launch-artwork-frame[^{]*\{[^}]*rotate\(90deg\)/s);
+  assert.match(styles, /#launch-start-button:focus-visible/);
   assert.match(gameSource, /pointerType === 'touch'/);
   assert.match(gameSource, /addEventListener\('pointerdown', handleGestureStart\)/);
   assert.match(gameSource, /LJS\.keyIsDown\('ArrowDown'\)/);
@@ -455,19 +466,49 @@ test('the launch is buttonless and touch play is swipe-only', async () => {
   );
   assert.doesNotMatch(gameSource, /pointerControls|clearPointerControls/);
   assert.match(gameSource, /clearAllControls\(\).*Player/s);
-  assert.match(gameSource, /const LAUNCH_SPLASH_MIN_MS = 1800/);
+  assert.doesNotMatch(gameSource, /LAUNCH_SPLASH_MIN_MS|scheduleInitialRun|portraitOverride/);
+  assert.doesNotMatch(launchSource, /littlejs|engineInit/i);
   assert.match(
     gameSource,
     /function syncPageInteractivity\(orientationBlocked\)[\s\S]*orientationBlocked \|\| !initialRunStarted/,
   );
   assert.match(
-    gameSource,
-    /function completeInitialLaunch\(\)[\s\S]*syncPageInteractivity\(false\)[\s\S]*launchSplash\.classList\.add\('is-hidden'\)[\s\S]*beginRun\(\)/,
+    launchSource,
+    /launchStartButton\.addEventListener\('click', startLaunch\)/,
   );
-  const readyIndex = gameSource.indexOf('engineReady = true;');
-  const launchIndex = gameSource.indexOf('scheduleInitialRun();', readyIndex);
+  assert.match(
+    launchSource,
+    /launchStartButton\.addEventListener\('keydown',[\s\S]*event\.key === 'Enter'[\s\S]*event\.key === ' '/,
+  );
+  assert.match(launchSource, /await import\('\.\/game\.js'\)/);
+  assert.match(launchSource, /documentRoot\.dataset\.mrBbLaunchReady = 'true'/);
+  assert.match(launchSource, /launchSplashImage\.naturalWidth <= 0/);
+  assert.match(launchSource, /ARTWORK_TIMEOUT_MS = 12000/);
+  assert.match(launchSource, /artworkFailed = true/);
+  assert.match(launchSource, /COULD NOT LOAD THE JOBSITE\. REOPEN THE GAME TO TRY AGAIN\./);
+  assert.match(launchSource, /startFailed = true/);
+  assert.match(launchSource, /COULD NOT START THE JOBSITE\. REOPEN THE GAME TO TRY AGAIN\./);
+  assert.match(launchSource, /!isLandscapeNow\(\)/);
+  assert.match(gameSource, /export function startGame\(\)/);
+  assert.match(gameSource, /export function activateGame\(\)/);
+  assert.match(gameSource, /documentRoot\.dataset\.mrBbGamePaused = String\(gamePaused\)/);
+  assert.match(gameSource, /LJS\.setPaused\(gamePaused\)/);
+  assert.match(gameSource, /Promise\.resolve\([\s\S]*?LJS\.engineInit\([\s\S]*?\.catch\(rejectPendingStart\)/);
+  assert.match(launchSource, /window\.clearTimeout\(timeoutId\)/);
+  assert.equal((gameSource.match(/LJS\.engineInit\(/g) || []).length, 1);
+  const startFunctionIndex = gameSource.indexOf('export function startGame()');
+  const engineInitIndex = gameSource.indexOf('LJS.engineInit(');
   assert.ok(
-    readyIndex >= 0 && launchIndex > readyIndex,
-    'auto-start must be scheduled only after the engine is ready',
+    startFunctionIndex >= 0 && engineInitIndex > startFunctionIndex,
+    'the LittleJS engine may initialize only inside the explicit start function',
   );
+});
+
+test('landscape launch validation accepts either sideways direction and rejects portrait', () => {
+  assert.equal(isLandscapeViewport(852, 393), true);
+  assert.equal(isLandscapeViewport(393, 852), false);
+  assert.equal(isLandscapeViewport(932, 430), true);
+  assert.equal(isLandscapeViewport(430, 932), false);
+  assert.equal(isLandscapeViewport(0, 430), false);
+  assert.equal(isLandscapeViewport(Number.NaN, 430), false);
 });
